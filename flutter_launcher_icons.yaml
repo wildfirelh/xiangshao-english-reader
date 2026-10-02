@@ -1,0 +1,8 @@
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: tools/icon_sources/launcher.png
+  adaptive_icon_background: '#58AAAC'
+  adaptive_icon_foreground: tools/icon_sources/foreground.png
+  adaptive_icon_foreground_inset: 0
+  min_sdk_android: 21
