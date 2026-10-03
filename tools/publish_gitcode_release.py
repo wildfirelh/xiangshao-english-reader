@@ -47,6 +47,7 @@ def credentials(remote):
 
 class GitCodeRelease:
     def __init__(self, repository, token, tag):
+        self.repository = repository
         self.endpoint = f"{API}/repos/{repository}"
         self.tag = quote(tag, safe="")
         self.session = requests.Session()
@@ -82,30 +83,41 @@ class GitCodeRelease:
         upload = self.request("GET", f"/releases/{self.tag}/upload_url",
                               params={"file_name": file.name})
         url = self.secure_url(upload["url"])
-        # Use a separate request: API authentication must never reach storage.
+        # A separate session excludes API headers and automatic .netrc auth.
+        storage = requests.Session()
+        storage.trust_env = False
         try:
             with file.open("rb") as source:
-                with requests.put(url, headers=upload["headers"], data=source,
-                                  timeout=(20, 180), allow_redirects=False) as response:
+                with storage.put(url, headers=upload["headers"], data=source,
+                                 timeout=(20, 180), allow_redirects=False) as response:
                     if not response.ok:
                         raise RuntimeError(f"Attachment upload failed (HTTP {response.status_code})")
         except requests.RequestException:
             raise RuntimeError("Attachment upload network request failed; rerun to resume") from None
+        finally:
+            storage.close()
 
-    def verify_download(self, file):
-        url = f"{self.endpoint}/releases/{self.tag}/attach_files/{quote(file.name, safe='')}/download"
+    def verify_download(self, file, *, anonymous=False):
+        filename = quote(file.name, safe="")
+        if anonymous:
+            url = f"https://gitcode.com/{self.repository}/releases/download/{self.tag}/{filename}"
+        else:
+            url = f"{self.endpoint}/releases/{self.tag}/attach_files/{filename}/download"
         expected = hashlib.sha256(file.read_bytes()).hexdigest()
+        storage = requests.Session()
+        storage.trust_env = False
         response = None
         try:
-            # Only the first API request carries the GitCode token. Follow signed
-            # storage redirects explicitly, without forwarding authentication.
-            response = self.session.get(url, stream=True, timeout=(20, 60), allow_redirects=False)
+            # Public browser downloads must work without credentials. Storage
+            # redirects always omit API authentication.
+            download = storage.get if anonymous else self.session.get
+            response = download(url, stream=True, timeout=(20, 60), allow_redirects=False)
             for _ in range(5):
                 if response.status_code not in (301, 302, 303, 307, 308):
                     break
                 location = self.secure_url(response.headers.get("Location", ""))
                 response.close()
-                response = requests.get(location, stream=True, timeout=(20, 60), allow_redirects=False)
+                response = storage.get(location, stream=True, timeout=(20, 60), allow_redirects=False)
             if response.status_code != 200:
                 raise RuntimeError(f"Attachment verification failed (HTTP {response.status_code})")
             digest = hashlib.sha256()
@@ -120,11 +132,14 @@ class GitCodeRelease:
         finally:
             if response is not None:
                 response.close()
+            storage.close()
 
-    def publish(self, tag, head, title, notes, files):
+    def publish(self, tag, head, title, notes, files, *, expected_private=True):
+        if not isinstance(expected_private, bool):
+            raise RuntimeError("Expected repository privacy must be true or false")
         repo = self.request("GET", "")
-        if not repo.get("private"):
-            raise RuntimeError("Expected this project's existing private repository")
+        if repo.get("private") is not expected_private:
+            raise RuntimeError("Repository privacy does not match requested publication mode")
         release = self.release()
         if release is None:
             release = self.request("POST", "/releases", json={
@@ -140,7 +155,7 @@ class GitCodeRelease:
             if file.name not in assets:
                 print(f"Uploading {file.name} ({file.stat().st_size:,} bytes)", flush=True)
                 self.upload(file)
-            self.verify_download(file)
+            self.verify_download(file, anonymous=not expected_private)
             print(f"Verified remote SHA256: {file.name}", flush=True)
         self.request("PATCH", f"/releases/{self.tag}", json={
             "name": title, "body": notes, "release_status": "latest",

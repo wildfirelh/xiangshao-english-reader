@@ -52,24 +52,42 @@ class GitCodeReleaseTests(unittest.TestCase):
         self.token = "TEST-PRIVATE-TOKEN-DO-NOT-PRINT"
         self.signed_url = "https://storage.example.test/release?signature=TEST-SIGNED-SECRET"
         self.session = Mock(headers={})
+        self.storage_sessions = []
+        self.storage_get = Mock(side_effect=AssertionError("Unexpected external HTTP request"))
+        self.storage_put = Mock(side_effect=AssertionError("Unexpected external HTTP request"))
         for method in ("request", "get"):
             getattr(self.session, method).side_effect = AssertionError("Unexpected API request")
-        for target, attribute, value in (
-            ("Session", "session_factory", self.session),
-            ("get", "storage_get", None),
-            ("put", "storage_put", None),
+        for target, attribute in (
+            ("Session", "session_factory"),
+            ("get", "module_get"),
+            ("put", "module_put"),
         ):
             patcher = patch.object(publisher.requests, target)
             mocked = patcher.start()
             self.addCleanup(patcher.stop)
             setattr(self, attribute, mocked)
-            if value is None:
-                mocked.side_effect = AssertionError("Unexpected external HTTP request")
-            else:
-                mocked.return_value = value
+            mocked.side_effect = AssertionError("Unexpected external HTTP request")
+        self.session_factory.side_effect = self.new_session
+        self.api_session_created = False
         self.client = publisher.GitCodeRelease("test-owner/test-repo", self.token, "v1.2.0")
         self.notes = "本版增加教材点读。"
         self.head = "a" * 40
+
+    def new_session(self):
+        if not self.api_session_created:
+            self.api_session_created = True
+            return self.session
+        storage = Mock(headers={}, get=self.storage_get, put=self.storage_put)
+        self.storage_sessions.append(storage)
+        return storage
+
+    def tearDown(self):
+        for storage in self.storage_sessions:
+            self.assertFalse(storage.trust_env)
+            self.assertNotIn("PRIVATE-TOKEN", storage.headers)
+            storage.close.assert_called_once_with()
+        self.module_get.assert_not_called()
+        self.module_put.assert_not_called()
 
     def release(self, assets=(), status="pre"):
         return {
@@ -80,7 +98,7 @@ class GitCodeReleaseTests(unittest.TestCase):
             "assets": [{"name": name} for name in assets],
         }
 
-    def configure_publish(self, initial, downloads=None):
+    def configure_publish(self, initial, downloads=None, *, expected_private=True):
         events = []
         releases = iter([initial, self.release([file.name for file in self.files], "latest")])
 
@@ -88,7 +106,7 @@ class GitCodeReleaseTests(unittest.TestCase):
             self.assertFalse(kwargs["allow_redirects"])
             suffix = url.removeprefix(self.client.endpoint)
             if (method, suffix) == ("GET", ""):
-                return FakeResponse(payload={"private": True})
+                return FakeResponse(payload={"private": expected_private})
             if (method, suffix) == ("GET", "/releases/tags/v1.2.0"):
                 release = next(releases)
                 return FakeResponse(404) if release is None else FakeResponse(payload=release)
@@ -116,20 +134,28 @@ class GitCodeReleaseTests(unittest.TestCase):
 
         def download(url, **kwargs):
             self.assertFalse(kwargs["allow_redirects"])
-            name = url.split("/attach_files/", 1)[1].removesuffix("/download")
+            if expected_private:
+                name = url.split("/attach_files/", 1)[1].removesuffix("/download")
+            else:
+                prefix = f"https://gitcode.com/{self.client.repository}/releases/download/v1.2.0/"
+                self.assertTrue(url.startswith(prefix))
+                name = url.removeprefix(prefix)
             file = next(file for file in self.files if file.name == name)
             events.append(f"verify:{name}")
             content = (downloads or {}).get(name, file.read_bytes())
             return FakeResponse(content=content)
 
         self.session.request.side_effect = api
-        self.session.get.side_effect = download
+        if expected_private:
+            self.session.get.side_effect = download
+        else:
+            self.storage_get.side_effect = download
         self.storage_put.side_effect = upload
         return events
 
-    def publish(self):
+    def publish(self, **kwargs):
         with contextlib.redirect_stdout(io.StringIO()):
-            return self.client.publish("v1.2.0", self.head, "Test release", self.notes, self.files)
+            return self.client.publish("v1.2.0", self.head, "Test release", self.notes, self.files, **kwargs)
 
     def assert_redacted(self, error):
         message = str(error)
@@ -229,6 +255,50 @@ class GitCodeReleaseTests(unittest.TestCase):
         self.assertEqual(result["release_status"], "latest")
         self.storage_put.assert_not_called()
         self.assertFalse(any(item.args[0] == "POST" for item in self.session.request.call_args_list))
+
+    def test_public_download_is_anonymous_from_first_request_through_redirects(self):
+        first = FakeResponse(302, headers={"Location": self.signed_url})
+        final = FakeResponse(content=self.apk.read_bytes())
+        self.storage_get.side_effect = [first, final]
+        self.client.verify_download(self.apk, anonymous=True)
+        self.assertEqual(self.storage_get.call_args_list, [
+            call(f"https://gitcode.com/{self.client.repository}/releases/download/v1.2.0/{self.apk.name}",
+                 stream=True, timeout=(20, 60), allow_redirects=False),
+            call(self.signed_url, stream=True, timeout=(20, 60), allow_redirects=False),
+        ])
+        self.session.get.assert_not_called()
+        self.assertTrue(first.closed)
+        self.assertTrue(final.closed)
+
+    def test_public_publish_verifies_both_attachments_anonymously_before_latest(self):
+        events = self.configure_publish(None, expected_private=False)
+        result = self.publish(expected_private=False)
+        self.assertEqual(events, [
+            "create", f"upload:{self.apk.name}", f"verify:{self.apk.name}",
+            f"upload:{self.checksum.name}", f"verify:{self.checksum.name}", "latest",
+        ])
+        self.assertEqual(result["release_status"], "latest")
+        self.session.get.assert_not_called()
+        self.assertEqual(self.storage_get.call_count, 2)
+        for request in self.storage_get.call_args_list:
+            self.assertNotIn("headers", request.kwargs)
+            self.assertNotIn("auth", request.kwargs)
+            self.assertNotIn(self.token, repr(request))
+
+    def test_repository_privacy_must_match_exact_boolean_mode(self):
+        for expected_private in (True, False):
+            for actual in (not expected_private, None, 0, 1, "true", "false"):
+                with self.subTest(expected_private=expected_private, actual=actual):
+                    self.session.request.reset_mock()
+                    self.session.request.side_effect = None
+                    payload = {} if actual is None else {"private": actual}
+                    self.session.request.return_value = FakeResponse(payload=payload)
+                    with self.assertRaisesRegex(RuntimeError, "privacy does not match"):
+                        self.publish(expected_private=expected_private)
+                    self.session.request.assert_called_once()
+        self.session.get.assert_not_called()
+        self.storage_get.assert_not_called()
+        self.storage_put.assert_not_called()
 
 
 if __name__ == "__main__":

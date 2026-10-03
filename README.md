@@ -242,13 +242,17 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 ```powershell
 # 构建完成后，核对 APK 内部版本并归档带版本号的安装包及 SHA-256
 py -3.13 tools/package_release.py
-# 正常提交并推送 main 和对应的 annotated tag 后，发布 GitCode Release
-py -3.13 tools/publish_gitcode_release.py
+# 源码更新正常提交至私有 main，并推送新版本的 annotated tag 后，发布公开 Release
+py -3.13 tools/publish_public_release.py
 ```
 
-归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。发布脚本从 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager 读取凭据，要求 `main` 和 `v{版本}` 标签已经指向当前提交；随后上传 APK 与 `.apk.sha256`，下载校验远端文件成功后才将 Release 标记为最新正式版本。重复执行会复用并验证已有附件，不重复上传。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
+归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。公开发布入口为 `tools/publish_public_release.py`，凭据使用本机 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager；原 `tools/publish_gitcode_release.py` 保留为私有仓库发布的兼容入口。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
 
-当前版本：[v1.2.0 发布说明](releases/v1.2.0.md)。APK 和校验文件通过私有 GitCode 仓库的 Release 附件提供；源码与教材资源提交到仓库，安装包归档和本机凭据遵循现有忽略规则。
+源码、教材源资产和开发说明继续提交至 [GitCode 私有源码仓库](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader)，使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本。用户授权的 [GitCode 公开发布仓库](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader-releases) 只提供中文版本说明、下载文档以及 Release 中的 APK 和 `.apk.sha256` 附件；不上传源码、教材 PDF、教材清单或独立图片、音频等源资产，也不复制私有仓库历史。
+
+公开发布必须核对源码版本标签与对应安装包，在无登录凭据的情况下验证仓库页面和附件下载链接，并重新下载 APK 比较 SHA-256。只有匿名访问和下载校验均通过，才将该版本视为公开发布完成。
+
+当前应用版本与说明为 [v1.2.0](releases/v1.2.0.md)，本次公开发布渠道沿用现有 `1.2.0+3` 安装包。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 
 ## 系统音频中断
 
