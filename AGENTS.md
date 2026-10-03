@@ -1,6 +1,6 @@
 # 项目交付与发布约定
 
-本项目为“湘少英语三上点读”。2026-10-03 用户已明确改为公开源码，并授权将源码与 APK Release 合并发布：AtomGit（原 GitCode）和 GitHub 每个平台只保留一个 `xiangshao-english-reader` 仓库；旧 `xiangshao-english-reader-releases` 仓库在 Release、附件和下载入口迁移验证完成后删除。此授权替代原“私有源码仓库 + 独立公开下载仓库”的约定。每次更新 APK，文件名必须带版本号，同步提交并在两端发布新版本，写明实际增加、改进和修复的功能。后续交付 App 功能或教材资源更新时，在同一任务内完成以下流程，无需再次请求发布或同步确认。
+本项目为“湘少英语三上点读”。2026-10-03 用户已明确改为公开源码，并授权将源码与 APK Release 合并发布。迁移已完成：AtomGit（原 GitCode）和 GitHub 每个平台只保留一个公开 `xiangshao-english-reader` 仓库；旧 `xiangshao-english-reader-releases` 仓库已在 Release、附件和下载入口迁移验证完成后删除。此授权替代原“私有源码仓库 + 独立公开下载仓库”的约定。每次更新 APK，文件名必须带版本号，同步提交并在两端发布新版本，写明实际增加、改进和修复的功能。后续交付 App 功能或教材资源更新时，在同一任务内完成以下流程，无需再次请求发布或同步确认。
 
 1. 在 `pubspec.yaml` 同步语义版本号和递增的构建号（`版本+构建号`），同步 `README.md`、`CHANGELOG.md` 和 `releases/v{版本}.md`。发布说明使用中文，写本版实际新增、改进和修复的功能。
 2. 完成与改动相关的验证；常规交付执行 `flutter analyze`、`flutter test` 和 `py -3.13 -m unittest discover -s tools -p 'test_*.py' -v`，记录真实结果。教材更新还应核对清单、图片和音频完整性。

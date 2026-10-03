@@ -257,13 +257,13 @@ py -3.13 tools/publish_github_release.py
 
 归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。AtomGit（原 GitCode）同仓发布入口为 `tools/publish_public_release.py`，凭据使用本机 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager；GitHub 同仓发布入口为 `tools/publish_github_release.py`，使用本机已登录的 GitHub 账户和凭据。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
 
-根据 2026-10-03 用户确认的新方案，两端各使用一个公开仓库，源码与 APK Release 同仓发布。源码使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本：
+2026-10-03 已完成仓库合并：两端各使用一个公开仓库，源码与 APK Release 同仓发布。源码使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本：
 
 | 用途 | AtomGit / GitCode | GitHub | 可见性与内容 |
 | --- | --- | --- | --- |
 | 源码与下载 | [xiangshao-english-reader](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader) | [wildfirelh/xiangshao-english-reader](https://github.com/wildfirelh/xiangshao-english-reader) | 公开：源码、教材资产和开发说明；Release 提供中文版本说明、APK 和 `.apk.sha256` 附件 |
 
-新方案保留现有源码提交历史，旧独立下载仓库在 Release 和附件迁移、匿名访问验证完成后删除。两边 Release 必须使用同一版本说明、同一安装包和同一 SHA-256 校验文件；APK 作为 Release 附件发布，不提交 APK Git 对象。
+保留现有源码提交历史，旧独立下载仓库已在 Release 和附件迁移、匿名访问验证完成后删除。两边 Release 必须使用同一版本说明、同一安装包和同一 SHA-256 校验文件；APK 作为 Release 附件发布，不提交 APK Git 对象。
 
 保留源码仓库 AtomGit → GitHub 的原生 Push 镜像。首次同步与“立即同步”已验证；原生镜像同步 Git 提交、分支和标签，Release 说明及 APK 附件由 `tools/publish_github_release.py` 单独同步，脚本也会检查并补齐 Git 同步。
 
