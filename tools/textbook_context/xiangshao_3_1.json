@@ -1,0 +1,4503 @@
+{
+  "pdf_sha256": "68b07d8f83f26d9a20c2f1b63b898af19d0fb768074c8df23fd959e4bc2c132b",
+  "notes": "Reviewed against this PDF: speech bubble tails and character portraits. Boy/Girl/Children/Man identify unnamed roles; do not invent an individual identity. Vocabulary, instructions and answer choices remain narration. IDs, text and rectangles guard the annotations. Numbered scenes are detected from the PDF; regions refine unnumbered illustrated dialogues.",
+  "pages": {
+    "8": {
+      "speakers": {
+        "u1_p008_s009": {
+          "speaker": "Lingling",
+          "text": "Hello, I’m Lingling.",
+          "rect": {
+            "left": 0.1622987,
+            "top": 0.3957508,
+            "right": 0.3720703,
+            "bottom": 0.4197025
+          }
+        },
+        "u1_p008_s019": {
+          "speaker": "Lingling",
+          "text": "Good morning, Miss Li.",
+          "rect": {
+            "left": 0.1021923,
+            "top": 0.7830276,
+            "right": 0.3619045,
+            "bottom": 0.8069794
+          }
+        },
+        "u1_p008_s010": {
+          "speaker": "Peter",
+          "text": "Hello, Lingling.",
+          "rect": {
+            "left": 0.6022705,
+            "top": 0.4036179,
+            "right": 0.7673818,
+            "bottom": 0.4275697
+          }
+        },
+        "u1_p008_s011": {
+          "speaker": "Peter",
+          "text": "I’m Peter.",
+          "rect": {
+            "left": 0.774974,
+            "top": 0.4036179,
+            "right": 0.8797888,
+            "bottom": 0.4275697
+          }
+        },
+        "u1_p008_s018": {
+          "speaker": "Peter",
+          "text": "Hello, I’m Peter.",
+          "rect": {
+            "left": 0.5064479,
+            "top": 0.7798651,
+            "right": 0.6862708,
+            "bottom": 0.8038169
+          }
+        },
+        "u1_p008_s012": {
+          "speaker": "Mingming",
+          "text": "Good morning.",
+          "rect": {
+            "left": 0.2351067,
+            "top": 0.4771331,
+            "right": 0.4060502,
+            "bottom": 0.5010848
+          }
+        },
+        "u1_p008_s014": {
+          "speaker": "Mingming",
+          "text": "I’m Mingming.",
+          "rect": {
+            "left": 0.2351067,
+            "top": 0.5063102,
+            "right": 0.3998503,
+            "bottom": 0.5302619
+          }
+        },
+        "u1_p008_s013": {
+          "speaker": "Anne",
+          "text": "Good morning, Mingming.",
+          "rect": {
+            "left": 0.5138302,
+            "top": 0.4821665,
+            "right": 0.8118712,
+            "bottom": 0.5061183
+          }
+        },
+        "u1_p008_s015": {
+          "speaker": "Anne",
+          "text": "I’m Anne.",
+          "rect": {
+            "left": 0.5138302,
+            "top": 0.5113436,
+            "right": 0.6248502,
+            "bottom": 0.5352954
+          }
+        },
+        "u1_p008_s020": {
+          "speaker": "Miss Li",
+          "text": "Good morning, Lingling.",
+          "rect": {
+            "left": 0.2501204,
+            "top": 0.8603634,
+            "right": 0.4201838,
+            "bottom": 0.9134924
+          }
+        },
+        "u1_p008_s021": {
+          "speaker": "Miss Li",
+          "text": "Hello, Peter.",
+          "rect": {
+            "left": 0.6931919,
+            "top": 0.8616587,
+            "right": 0.8280919,
+            "bottom": 0.8856106
+          }
+        },
+        "u1_p008_s022": {
+          "speaker": "Miss Li",
+          "text": "I’m Miss Li.",
+          "rect": {
+            "left": 0.6931919,
+            "top": 0.8908358,
+            "right": 0.8190286,
+            "bottom": 0.9147877
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.72,
+            0.49,
+            0.95
+          ],
+          "anchor": 0.72
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.49,
+            0.72,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.72
+        }
+      ]
+    },
+    "9": {
+      "speakers": {
+        "u1_p009_s003": {
+          "speaker": "Peter",
+          "text": "Hello, I’m Peter.",
+          "rect": {
+            "left": 0.11549,
+            "top": 0.1312422,
+            "right": 0.2918925,
+            "bottom": 0.1551939
+          }
+        },
+        "u1_p009_s021": {
+          "speaker": "Peter",
+          "text": "Morning, I’m Peter.",
+          "rect": {
+            "left": 0.7092152,
+            "top": 0.6242872,
+            "right": 0.9271305,
+            "bottom": 0.6482389
+          }
+        },
+        "u1_p009_s004": {
+          "speaker": "Mingming",
+          "text": "Hello, Peter.",
+          "rect": {
+            "left": 0.3504103,
+            "top": 0.1358996,
+            "right": 0.4855731,
+            "bottom": 0.1598514
+          }
+        },
+        "u1_p009_s005": {
+          "speaker": "Mingming",
+          "text": "I’m Mingming.",
+          "rect": {
+            "left": 0.3504103,
+            "top": 0.1650767,
+            "right": 0.5151539,
+            "bottom": 0.1890285
+          }
+        },
+        "u1_p009_s019": {
+          "speaker": "Mingming",
+          "text": "Good morning.",
+          "rect": {
+            "left": 0.086968,
+            "top": 0.5851265,
+            "right": 0.2579115,
+            "bottom": 0.6090782
+          }
+        },
+        "u1_p009_s020": {
+          "speaker": "Mingming",
+          "text": "I’m Mingming.",
+          "rect": {
+            "left": 0.086968,
+            "top": 0.6143036,
+            "right": 0.2517116,
+            "bottom": 0.6382553
+          }
+        },
+        "u1_p009_s008": {
+          "speaker": "Anne",
+          "text": "Good morning.",
+          "rect": {
+            "left": 0.1143618,
+            "top": 0.2716556,
+            "right": 0.2853053,
+            "bottom": 0.2956074
+          }
+        },
+        "u1_p009_s010": {
+          "speaker": "Anne",
+          "text": "I’m Anne.",
+          "rect": {
+            "left": 0.1143618,
+            "top": 0.3008327,
+            "right": 0.2253818,
+            "bottom": 0.3247845
+          }
+        },
+        "u1_p009_s017": {
+          "speaker": "Anne",
+          "text": "Hi, I’m Anne.",
+          "rect": {
+            "left": 0.2771923,
+            "top": 0.5573698,
+            "right": 0.4278024,
+            "bottom": 0.5813216
+          }
+        },
+        "u1_p009_s009": {
+          "speaker": "Miss Li",
+          "text": "Good morning, Anne.",
+          "rect": {
+            "left": 0.347778,
+            "top": 0.2742871,
+            "right": 0.5922005,
+            "bottom": 0.2982388
+          }
+        },
+        "u1_p009_s011": {
+          "speaker": "Miss Li",
+          "text": "I’m Miss Li.",
+          "rect": {
+            "left": 0.347778,
+            "top": 0.3034642,
+            "right": 0.4736147,
+            "bottom": 0.327416
+          }
+        },
+        "u1_p009_s016": {
+          "speaker": "Miss Li",
+          "text": "Hello, I’m Miss Li.",
+          "rect": {
+            "left": 0.4622987,
+            "top": 0.5087482,
+            "right": 0.659723,
+            "bottom": 0.5326999
+          }
+        },
+        "u1_p009_s018": {
+          "speaker": "Lingling",
+          "text": "Hello, I’m Lingling.",
+          "rect": {
+            "left": 0.5974052,
+            "top": 0.5648893,
+            "right": 0.8071766,
+            "bottom": 0.5888411
+          }
+        },
+        "u1_p009_s022": {
+          "speaker": "Boy",
+          "text": "Hello, I’m...",
+          "rect": {
+            "left": 0.7588202,
+            "top": 0.7735352,
+            "right": 0.8902525,
+            "bottom": 0.797487
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-first",
+          "rect": [
+            0.05,
+            0.11,
+            0.59,
+            0.23
+          ],
+          "anchor": 0.11
+        },
+        {
+          "id": "C-second",
+          "rect": [
+            0.05,
+            0.25,
+            0.59,
+            0.34
+          ],
+          "anchor": 0.25
+        },
+        {
+          "id": "D-circle",
+          "rect": [
+            0.05,
+            0.5,
+            0.97,
+            0.87
+          ],
+          "anchor": 0.5
+        }
+      ]
+    },
+    "11": {
+      "speakers": {
+        "u1_p011_s003": {
+          "speaker": "Dino",
+          "text": "Help!",
+          "rect": {
+            "left": 0.6579164,
+            "top": 0.2014665,
+            "right": 0.7173407,
+            "bottom": 0.2254182
+          }
+        },
+        "u1_p011_s004": {
+          "speaker": "Dino",
+          "text": "Help!",
+          "rect": {
+            "left": 0.7249329,
+            "top": 0.2014665,
+            "right": 0.7843573,
+            "bottom": 0.2254182
+          }
+        },
+        "u1_p011_s005": {
+          "speaker": "Dino",
+          "text": "(HELP!)",
+          "rect": {
+            "left": 0.4620675,
+            "top": 0.3314196,
+            "right": 0.5403805,
+            "bottom": 0.3553714
+          }
+        },
+        "u1_p011_s006": {
+          "speaker": "Dino",
+          "text": "Thank you.",
+          "rect": {
+            "left": 0.4840428,
+            "top": 0.4303021,
+            "right": 0.6065693,
+            "bottom": 0.4542539
+          }
+        },
+        "u1_p011_s009": {
+          "speaker": "Dino",
+          "text": "Hello, Tim. I’m Dino Dinosaur.",
+          "rect": {
+            "left": 0.3732645,
+            "top": 0.6623686,
+            "right": 0.5391902,
+            "bottom": 0.7154975
+          }
+        },
+        "u1_p011_s007": {
+          "speaker": "Tim",
+          "text": "You’re welcome.",
+          "rect": {
+            "left": 0.6554525,
+            "top": 0.4359413,
+            "right": 0.8389008,
+            "bottom": 0.459893
+          }
+        },
+        "u1_p011_s008": {
+          "speaker": "Tim",
+          "text": "Hello, I’m Tim.",
+          "rect": {
+            "left": 0.1343095,
+            "top": 0.6623686,
+            "right": 0.2969515,
+            "bottom": 0.6863204
+          }
+        }
+      },
+      "regions": [],
+      "scene_assignments": {
+        "u1_p011_s009": {
+          "sceneId": "scene-6",
+          "text": "Hello, Tim. I’m Dino Dinosaur.",
+          "rect": {
+            "left": 0.3732645,
+            "top": 0.6623686,
+            "right": 0.5391902,
+            "bottom": 0.7154975
+          }
+        }
+      }
+    },
+    "13": {
+      "speakers": {
+        "u2_p013_s009": {
+          "speaker": "Miss Li",
+          "text": "Good afternoon, class.",
+          "rect": {
+            "left": 0.4313338,
+            "top": 0.2242872,
+            "right": 0.6852138,
+            "bottom": 0.2482389
+          }
+        },
+        "u2_p013_s016": {
+          "speaker": "Miss Li",
+          "text": "Goodbye.",
+          "rect": {
+            "left": 0.7238736,
+            "top": 0.5911026,
+            "right": 0.8358657,
+            "bottom": 0.6150543
+          }
+        },
+        "u2_p013_s010": {
+          "speaker": "Children",
+          "text": "Good afternoon, Miss Li.",
+          "rect": {
+            "left": 0.2952647,
+            "top": 0.2817692,
+            "right": 0.5705292,
+            "bottom": 0.3057209
+          }
+        },
+        "u2_p013_s013": {
+          "speaker": "Children",
+          "text": "Goodbye, Miss Li.",
+          "rect": {
+            "left": 0.526861,
+            "top": 0.4918946,
+            "right": 0.7276217,
+            "bottom": 0.5158463
+          }
+        },
+        "u2_p013_s011": {
+          "speaker": "Anne",
+          "text": "Hi, I’m Anne.",
+          "rect": {
+            "left": 0.1306483,
+            "top": 0.4421991,
+            "right": 0.2812583,
+            "bottom": 0.4661509
+          }
+        },
+        "u2_p013_s012": {
+          "speaker": "Anne",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.1306483,
+            "top": 0.4713762,
+            "right": 0.352846,
+            "bottom": 0.495328
+          }
+        },
+        "u2_p013_s014": {
+          "speaker": "Lulu",
+          "text": "Hi, Anne.",
+          "rect": {
+            "left": 0.3710472,
+            "top": 0.5580456,
+            "right": 0.4764979,
+            "bottom": 0.5819973
+          }
+        },
+        "u2_p013_s015": {
+          "speaker": "Lulu",
+          "text": "My name is Lulu.",
+          "rect": {
+            "left": 0.3710472,
+            "top": 0.5872227,
+            "right": 0.4758148,
+            "bottom": 0.6403515
+          }
+        },
+        "u2_p013_s019": {
+          "speaker": "Peter",
+          "text": "Good afternoon.",
+          "rect": {
+            "left": 0.0971224,
+            "top": 0.7129602,
+            "right": 0.2833817,
+            "bottom": 0.736912
+          }
+        },
+        "u2_p013_s020": {
+          "speaker": "Peter",
+          "text": "I’m Peter.",
+          "rect": {
+            "left": 0.2907375,
+            "top": 0.7129602,
+            "right": 0.3987365,
+            "bottom": 0.736912
+          }
+        },
+        "u2_p013_s021": {
+          "speaker": "Peter",
+          "text": "Goodbye, Beibei.",
+          "rect": {
+            "left": 0.5037937,
+            "top": 0.7396752,
+            "right": 0.6986172,
+            "bottom": 0.763627
+          }
+        },
+        "u2_p013_s022": {
+          "speaker": "Peter",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.0971224,
+            "top": 0.7421373,
+            "right": 0.3195828,
+            "bottom": 0.7660891
+          }
+        },
+        "u2_p013_s023": {
+          "speaker": "Beibei",
+          "text": "Bye, Peter.",
+          "rect": {
+            "left": 0.7611597,
+            "top": 0.7600013,
+            "right": 0.8802972,
+            "bottom": 0.7839532
+          }
+        },
+        "u2_p013_s024": {
+          "speaker": "Beibei",
+          "text": "Good afternoon, Peter.",
+          "rect": {
+            "left": 0.2235997,
+            "top": 0.8850012,
+            "right": 0.4812629,
+            "bottom": 0.908953
+          }
+        },
+        "u2_p013_s025": {
+          "speaker": "Beibei",
+          "text": "My name is Beibei.",
+          "rect": {
+            "left": 0.2235997,
+            "top": 0.9141783,
+            "right": 0.4355518,
+            "bottom": 0.9381301
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.69,
+            0.495,
+            0.95
+          ],
+          "anchor": 0.69
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.495,
+            0.69,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.69
+        }
+      ]
+    },
+    "14": {
+      "speakers": {
+        "u2_p014_s003": {
+          "speaker": "Lingling",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.5241399,
+            "top": 0.1195041,
+            "right": 0.7466001,
+            "bottom": 0.1434558
+          }
+        },
+        "u2_p014_s004": {
+          "speaker": "Peter",
+          "text": "Good afternoon, Miss Li.",
+          "rect": {
+            "left": 0.1223406,
+            "top": 0.1415917,
+            "right": 0.3088363,
+            "bottom": 0.19472
+          }
+        },
+        "u2_p014_s005": {
+          "speaker": "Jiajia",
+          "text": "My name is Jiajia.",
+          "rect": {
+            "left": 0.6893039,
+            "top": 0.2453807,
+            "right": 0.8987864,
+            "bottom": 0.2693324
+          }
+        },
+        "u2_p014_s006": {
+          "speaker": "Miss Li",
+          "text": "Good afternoon, Peter.",
+          "rect": {
+            "left": 0.2103099,
+            "top": 0.2601286,
+            "right": 0.467973,
+            "bottom": 0.2840804
+          }
+        },
+        "u2_p014_s007": {
+          "speaker": "Children",
+          "text": "Goodbye, Mr Zhang.",
+          "rect": {
+            "left": 0.2771297,
+            "top": 0.3300362,
+            "right": 0.514643,
+            "bottom": 0.353988
+          }
+        },
+        "u2_p014_s008": {
+          "speaker": "Mr Zhang",
+          "text": "Bye.",
+          "rect": {
+            "left": 0.7307091,
+            "top": 0.3325577,
+            "right": 0.7786794,
+            "bottom": 0.3565094
+          }
+        },
+        "u2_p014_s011": {
+          "speaker": "Mingming",
+          "text": "Hello.",
+          "rect": {
+            "left": 0.6135023,
+            "top": 0.5739114,
+            "right": 0.6774978,
+            "bottom": 0.5978632
+          }
+        },
+        "u2_p014_s012": {
+          "speaker": "Mingming",
+          "text": "Stand up, please.",
+          "rect": {
+            "left": 0.68509,
+            "top": 0.5739114,
+            "right": 0.8794668,
+            "bottom": 0.5978632
+          }
+        },
+        "u2_p014_s016": {
+          "speaker": "Mingming",
+          "text": "Benny, sit down, please.",
+          "rect": {
+            "left": 0.7220608,
+            "top": 0.7427081,
+            "right": 0.9065598,
+            "bottom": 0.7958365
+          }
+        },
+        "u2_p014_s017": {
+          "speaker": "Mingming",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.2246029,
+            "top": 0.7641365,
+            "right": 0.4470633,
+            "bottom": 0.7880883
+          }
+        },
+        "u2_p014_s015": {
+          "speaker": "Benny",
+          "text": "My name is Benny.",
+          "rect": {
+            "left": 0.4779481,
+            "top": 0.7378212,
+            "right": 0.6901102,
+            "bottom": 0.761773
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-left",
+          "rect": [
+            0.05,
+            0.11,
+            0.48,
+            0.3
+          ],
+          "anchor": 0.11
+        },
+        {
+          "id": "C-right",
+          "rect": [
+            0.49,
+            0.11,
+            0.96,
+            0.3
+          ],
+          "anchor": 0.11
+        },
+        {
+          "id": "C-farewell",
+          "rect": [
+            0.1,
+            0.31,
+            0.95,
+            0.45
+          ],
+          "anchor": 0.31
+        }
+      ],
+      "scene_assignments": {
+        "u2_p014_s015": {
+          "sceneId": "scene-2",
+          "text": "My name is Benny.",
+          "rect": {
+            "left": 0.4779481,
+            "top": 0.7378212,
+            "right": 0.6901102,
+            "bottom": 0.761773
+          }
+        }
+      }
+    },
+    "16": {
+      "speakers": {
+        "u2_p016_s003": {
+          "speaker": "Dino",
+          "text": "Good afternoon, Tim.",
+          "rect": {
+            "left": 0.4480758,
+            "top": 0.1547392,
+            "right": 0.6885577,
+            "bottom": 0.1786909
+          }
+        },
+        "u2_p016_s005": {
+          "speaker": "Dino",
+          "text": "Hello, I’m Dino.",
+          "rect": {
+            "left": 0.2047875,
+            "top": 0.4171445,
+            "right": 0.3806962,
+            "bottom": 0.4410962
+          }
+        },
+        "u2_p016_s007": {
+          "speaker": "Dino",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.2047875,
+            "top": 0.446321,
+            "right": 0.4272479,
+            "bottom": 0.4702728
+          }
+        },
+        "u2_p016_s004": {
+          "speaker": "Tim",
+          "text": "Good afternoon, Dino.",
+          "rect": {
+            "left": 0.6068532,
+            "top": 0.1961237,
+            "right": 0.8606018,
+            "bottom": 0.2200754
+          }
+        },
+        "u2_p016_s008": {
+          "speaker": "Tim",
+          "text": "OK.",
+          "rect": {
+            "left": 0.8443535,
+            "top": 0.4905835,
+            "right": 0.8894603,
+            "bottom": 0.5145352
+          }
+        },
+        "u2_p016_s011": {
+          "speaker": "Tim",
+          "text": "Bye, Taotao.",
+          "rect": {
+            "left": 0.4389309,
+            "top": 0.641901,
+            "right": 0.5797681,
+            "bottom": 0.6658527
+          }
+        },
+        "u2_p016_s006": {
+          "speaker": "Taotao",
+          "text": "Let’s put the balls back.",
+          "rect": {
+            "left": 0.6079172,
+            "top": 0.4314301,
+            "right": 0.7420028,
+            "bottom": 0.4845584
+          }
+        },
+        "u2_p016_s009": {
+          "speaker": "Taotao",
+          "text": "Hi, Dino.",
+          "rect": {
+            "left": 0.2393618,
+            "top": 0.5934999,
+            "right": 0.3386126,
+            "bottom": 0.6174516
+          }
+        },
+        "u2_p016_s010": {
+          "speaker": "Taotao",
+          "text": "I’m Taotao.",
+          "rect": {
+            "left": 0.3462048,
+            "top": 0.5934999,
+            "right": 0.4761397,
+            "bottom": 0.6174516
+          }
+        },
+        "u2_p016_s012": {
+          "speaker": "Taotao",
+          "text": "Bye, Tim and Dino.",
+          "rect": {
+            "left": 0.2873595,
+            "top": 0.8205677,
+            "right": 0.4995217,
+            "bottom": 0.8445196
+          }
+        }
+      },
+      "regions": []
+    },
+    "18": {
+      "speakers": {
+        "u3_p018_s009": {
+          "speaker": "Lingling",
+          "text": "How old are you, Lulu?",
+          "rect": {
+            "left": 0.5209507,
+            "top": 0.2116199,
+            "right": 0.7797433,
+            "bottom": 0.2355716
+          }
+        },
+        "u3_p018_s010": {
+          "speaker": "Lingling",
+          "text": "That’s great, Lulu.",
+          "rect": {
+            "left": 0.1457449,
+            "top": 0.2261877,
+            "right": 0.344115,
+            "bottom": 0.2501395
+          }
+        },
+        "u3_p018_s014": {
+          "speaker": "Lingling",
+          "text": "One, two, three…",
+          "rect": {
+            "left": 0.573295,
+            "top": 0.4318051,
+            "right": 0.776131,
+            "bottom": 0.4557569
+          }
+        },
+        "u3_p018_s015": {
+          "speaker": "Lingling",
+          "text": "I’m eight.",
+          "rect": {
+            "left": 0.2528054,
+            "top": 0.5637681,
+            "right": 0.3609882,
+            "bottom": 0.5877199
+          }
+        },
+        "u3_p018_s011": {
+          "speaker": "Lulu",
+          "text": "I’m nine.",
+          "rect": {
+            "left": 0.6446174,
+            "top": 0.3385809,
+            "right": 0.7438417,
+            "bottom": 0.3625326
+          }
+        },
+        "u3_p018_s012": {
+          "speaker": "Lulu",
+          "text": "Thank you, Lingling.",
+          "rect": {
+            "left": 0.1650909,
+            "top": 0.3750469,
+            "right": 0.3885233,
+            "bottom": 0.3989987
+          }
+        },
+        "u3_p018_s013": {
+          "speaker": "Lulu",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.2696819,
+            "top": 0.4216563,
+            "right": 0.4704426,
+            "bottom": 0.4456081
+          }
+        },
+        "u3_p018_s019": {
+          "speaker": "Mingming",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.1225436,
+            "top": 0.7119755,
+            "right": 0.3233044,
+            "bottom": 0.7359274
+          }
+        },
+        "u3_p018_s021": {
+          "speaker": "Mingming",
+          "text": "I’m eight too.",
+          "rect": {
+            "left": 0.1930224,
+            "top": 0.8936188,
+            "right": 0.3452874,
+            "bottom": 0.9175706
+          }
+        },
+        "u3_p018_s020": {
+          "speaker": "Boy",
+          "text": "I’m eight.",
+          "rect": {
+            "left": 0.3674903,
+            "top": 0.8032417,
+            "right": 0.4756732,
+            "bottom": 0.8271935
+          }
+        },
+        "u3_p018_s018": {
+          "speaker": "Children",
+          "text": "One, two, three, four, five…",
+          "rect": {
+            "left": 0.5491391,
+            "top": 0.7058725,
+            "right": 0.864834,
+            "bottom": 0.7298243
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.68,
+            0.52,
+            0.95
+          ],
+          "anchor": 0.68
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.52,
+            0.68,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.68
+        }
+      ]
+    },
+    "19": {
+      "speakers": {
+        "u3_p019_s003": {
+          "speaker": "Lingling",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.2971164,
+            "top": 0.1314298,
+            "right": 0.4978771,
+            "bottom": 0.1553816
+          }
+        },
+        "u3_p019_s004": {
+          "speaker": "Mingming",
+          "text": "I’m nine.",
+          "rect": {
+            "left": 0.5502661,
+            "top": 0.1371355,
+            "right": 0.6494905,
+            "bottom": 0.1610873
+          }
+        },
+        "u3_p019_s017": {
+          "speaker": "Girl",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.4348642,
+            "top": 0.5842497,
+            "right": 0.6356248,
+            "bottom": 0.6082014
+          }
+        },
+        "u3_p019_s018": {
+          "speaker": "Girl",
+          "text": "I’m six.",
+          "rect": {
+            "left": 0.1925679,
+            "top": 0.7017301,
+            "right": 0.2744274,
+            "bottom": 0.7256819
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.2,
+            0.11,
+            0.85,
+            0.2
+          ],
+          "anchor": 0.11
+        },
+        {
+          "id": "D-game",
+          "rect": [
+            0.1,
+            0.56,
+            0.95,
+            0.85
+          ],
+          "anchor": 0.56
+        }
+      ]
+    },
+    "21": {
+      "speakers": {
+        "u3_p021_s003": {
+          "speaker": "Tim",
+          "text": "Dino, how old are you?",
+          "rect": {
+            "left": 0.1166924,
+            "top": 0.1547392,
+            "right": 0.3807129,
+            "bottom": 0.1786909
+          }
+        },
+        "u3_p021_s005": {
+          "speaker": "Tim",
+          "text": "You’re six.",
+          "rect": {
+            "left": 0.1739362,
+            "top": 0.3870358,
+            "right": 0.2907358,
+            "bottom": 0.4109875
+          }
+        },
+        "u3_p021_s007": {
+          "speaker": "Tim",
+          "text": "I’m nine.",
+          "rect": {
+            "left": 0.7737721,
+            "top": 0.5625743,
+            "right": 0.8729964,
+            "bottom": 0.586526
+          }
+        },
+        "u3_p021_s008": {
+          "speaker": "Tim",
+          "text": "He’s two.",
+          "rect": {
+            "left": 0.5761901,
+            "top": 0.6356624,
+            "right": 0.6804585,
+            "bottom": 0.6596141
+          }
+        },
+        "u3_p021_s004": {
+          "speaker": "Dino",
+          "text": "I don’t know.",
+          "rect": {
+            "left": 0.5940857,
+            "top": 0.1971857,
+            "right": 0.7433557,
+            "bottom": 0.2211375
+          }
+        },
+        "u3_p021_s006": {
+          "speaker": "Dino",
+          "text": "How old are you, Tim?",
+          "rect": {
+            "left": 0.4119063,
+            "top": 0.4163925,
+            "right": 0.6666532,
+            "bottom": 0.4403442
+          }
+        },
+        "u3_p021_s009": {
+          "speaker": "Dino",
+          "text": "How old are you, Doggie?",
+          "rect": {
+            "left": 0.107118,
+            "top": 0.636769,
+            "right": 0.4033728,
+            "bottom": 0.6607207
+          }
+        }
+      },
+      "regions": []
+    },
+    "22": {
+      "speakers": {
+        "u3_p022_s015": {
+          "speaker": "Miss Li",
+          "text": "Four and three is...",
+          "rect": {
+            "left": 0.0845118,
+            "top": 0.7532747,
+            "right": 0.2958071,
+            "bottom": 0.7772266
+          }
+        },
+        "u3_p022_s016": {
+          "speaker": "Miss Li",
+          "text": "Seven and three is...",
+          "rect": {
+            "left": 0.5571806,
+            "top": 0.7532747,
+            "right": 0.7843432,
+            "bottom": 0.7772266
+          }
+        },
+        "u3_p022_s014": {
+          "speaker": "Lingling",
+          "text": "Seven!",
+          "rect": {
+            "left": 0.3711078,
+            "top": 0.6302964,
+            "right": 0.4447184,
+            "bottom": 0.6542482
+          }
+        },
+        "u3_p022_s013": {
+          "speaker": "Peter",
+          "text": "Ten!",
+          "rect": {
+            "left": 0.7532888,
+            "top": 0.6233467,
+            "right": 0.8002608,
+            "bottom": 0.6472985
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "I-left",
+          "rect": [
+            0.07,
+            0.6,
+            0.48,
+            0.83
+          ],
+          "anchor": 0.6
+        },
+        {
+          "id": "I-right",
+          "rect": [
+            0.52,
+            0.6,
+            0.95,
+            0.83
+          ],
+          "anchor": 0.6
+        }
+      ]
+    },
+    "23": {
+      "speakers": {
+        "u3_p023_s003": {
+          "speaker": "Peter",
+          "text": "Hi, Anne!",
+          "rect": {
+            "left": 0.4639459,
+            "top": 0.4494793,
+            "right": 0.5707362,
+            "bottom": 0.473431
+          }
+        },
+        "u3_p023_s004": {
+          "speaker": "Anne",
+          "text": "Hello, Peter!",
+          "rect": {
+            "left": 0.3792544,
+            "top": 0.6333099,
+            "right": 0.5152578,
+            "bottom": 0.6572616
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "greetings",
+          "rect": [
+            0.2,
+            0.42,
+            0.65,
+            0.72
+          ],
+          "anchor": 0.42
+        }
+      ]
+    },
+    "24": {
+      "speakers": {
+        "u3_p024_s003": {
+          "speaker": "Lingling",
+          "text": "Show me six this way.",
+          "rect": {
+            "left": 0.1779486,
+            "top": 0.3550482,
+            "right": 0.3166053,
+            "bottom": 0.4081765
+          }
+        },
+        "u3_p024_s004": {
+          "speaker": "Mingming",
+          "text": "And eight this way.",
+          "rect": {
+            "left": 0.7514708,
+            "top": 0.3631973,
+            "right": 0.8618077,
+            "bottom": 0.4163257
+          }
+        },
+        "u3_p024_s006": {
+          "speaker": "Peter",
+          "text": "What number is this?",
+          "rect": {
+            "left": 0.1836215,
+            "top": 0.7720313,
+            "right": 0.4239985,
+            "bottom": 0.7959831
+          }
+        },
+        "u3_p024_s007": {
+          "speaker": "Anne",
+          "text": "It’s four.",
+          "rect": {
+            "left": 0.7501678,
+            "top": 0.79552,
+            "right": 0.8445584,
+            "bottom": 0.8194719
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "CN-model",
+          "rect": [
+            0.1,
+            0.34,
+            0.95,
+            0.46
+          ],
+          "anchor": 0.34
+        },
+        {
+          "id": "US-model",
+          "rect": [
+            0.1,
+            0.75,
+            0.95,
+            0.89
+          ],
+          "anchor": 0.75
+        }
+      ]
+    },
+    "25": {
+      "speakers": {
+        "u3_p025_s002": {
+          "speaker": "Dino",
+          "text": "Now, I can...",
+          "rect": {
+            "left": 0.2068855,
+            "top": 0.1435208,
+            "right": 0.3583099,
+            "bottom": 0.1676768
+          }
+        }
+      },
+      "regions": []
+    },
+    "26": {
+      "speakers": {
+        "u3_p026_s005": {
+          "speaker": "Peter",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.2714237,
+            "top": 0.133656,
+            "right": 0.493884,
+            "bottom": 0.1576078
+          }
+        },
+        "u3_p026_s010": {
+          "speaker": "Lingling",
+          "text": "Hello!",
+          "rect": {
+            "left": 0.2826491,
+            "top": 0.3115618,
+            "right": 0.3474852,
+            "bottom": 0.3355135
+          }
+        },
+        "u3_p026_s017": {
+          "speaker": "Girl",
+          "text": "Good afternoon.",
+          "rect": {
+            "left": 0.2501465,
+            "top": 0.4803028,
+            "right": 0.4366422,
+            "bottom": 0.5042546
+          }
+        },
+        "u3_p026_s024": {
+          "speaker": "Girl",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.2501465,
+            "top": 0.7250952,
+            "right": 0.4509072,
+            "bottom": 0.7490471
+          }
+        }
+      },
+      "regions": []
+    },
+    "27": {
+      "speakers": {
+        "u3_p027_s005": {
+          "speaker": "Children",
+          "text": "Good morning, Miss Li.",
+          "rect": {
+            "left": 0.1962138,
+            "top": 0.2382268,
+            "right": 0.4559261,
+            "bottom": 0.2621785
+          }
+        },
+        "u3_p027_s006": {
+          "speaker": "Miss Li",
+          "text": "Good morning.",
+          "rect": {
+            "left": 0.5891074,
+            "top": 0.2518366,
+            "right": 0.7600508,
+            "bottom": 0.2757883
+          }
+        },
+        "u3_p027_s008": {
+          "speaker": "Lingling",
+          "text": "What’s your name?",
+          "rect": {
+            "left": 0.2244876,
+            "top": 0.3887793,
+            "right": 0.446948,
+            "bottom": 0.412731
+          }
+        },
+        "u3_p027_s015": {
+          "speaker": "Lingling",
+          "text": "How old are you?",
+          "rect": {
+            "left": 0.2186004,
+            "top": 0.6702661,
+            "right": 0.4193611,
+            "bottom": 0.6942179
+          }
+        },
+        "u3_p027_s009": {
+          "speaker": "Peter",
+          "text": "My name is Peter.",
+          "rect": {
+            "left": 0.5465252,
+            "top": 0.4232178,
+            "right": 0.746813,
+            "bottom": 0.4471695
+          }
+        },
+        "u3_p027_s014": {
+          "speaker": "Anne",
+          "text": "I’m nine.",
+          "rect": {
+            "left": 0.6619613,
+            "top": 0.6612016,
+            "right": 0.7611857,
+            "bottom": 0.6851533
+          }
+        },
+        "u3_p027_s011": {
+          "speaker": "Dino",
+          "text": "One, two, three...",
+          "rect": {
+            "left": 0.2021278,
+            "top": 0.5512724,
+            "right": 0.40147,
+            "bottom": 0.5752242
+          }
+        },
+        "u3_p027_s012": {
+          "speaker": "Dino",
+          "text": "ten.",
+          "rect": {
+            "left": 0.2021278,
+            "top": 0.5804489,
+            "right": 0.2443974,
+            "bottom": 0.6044007
+          }
+        },
+        "u3_p027_s018": {
+          "speaker": "Dino",
+          "text": "Excellent",
+          "rect": {
+            "left": 0.158095,
+            "top": 0.904416,
+            "right": 0.2446628,
+            "bottom": 0.9244686
+          }
+        },
+        "u3_p027_s019": {
+          "speaker": "Dino",
+          "text": "Fine",
+          "rect": {
+            "left": 0.4472681,
+            "top": 0.904416,
+            "right": 0.4973232,
+            "bottom": 0.9240972
+          }
+        },
+        "u3_p027_s020": {
+          "speaker": "Dino",
+          "text": "Try again",
+          "rect": {
+            "left": 0.6899212,
+            "top": 0.904416,
+            "right": 0.7811331,
+            "bottom": 0.9240972
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "greeting",
+          "rect": [
+            0.1,
+            0.23,
+            0.9,
+            0.3
+          ],
+          "anchor": 0.23
+        },
+        {
+          "id": "name",
+          "rect": [
+            0.1,
+            0.38,
+            0.9,
+            0.48
+          ],
+          "anchor": 0.38
+        },
+        {
+          "id": "age",
+          "rect": [
+            0.1,
+            0.65,
+            0.9,
+            0.72
+          ],
+          "anchor": 0.65
+        }
+      ]
+    },
+    "28": {
+      "speakers": {
+        "u4_p028_s009": {
+          "speaker": "Lingling",
+          "text": "Hi, Peter!",
+          "rect": {
+            "left": 0.4606384,
+            "top": 0.1940107,
+            "right": 0.564644,
+            "bottom": 0.2179625
+          }
+        },
+        "u4_p028_s010": {
+          "speaker": "Lingling",
+          "text": "This is my family. This is my mother and this is my father.",
+          "rect": {
+            "left": 0.4606384,
+            "top": 0.1940107,
+            "right": 0.8379119,
+            "bottom": 0.2471391
+          }
+        },
+        "u4_p028_s016": {
+          "speaker": "Lingling",
+          "text": "He’s my brother, Dongdong.",
+          "rect": {
+            "left": 0.1749771,
+            "top": 0.6175203,
+            "right": 0.4935093,
+            "bottom": 0.641472
+          }
+        },
+        "u4_p028_s020": {
+          "speaker": "Lingling",
+          "text": "He’s my brother.",
+          "rect": {
+            "left": 0.7034086,
+            "top": 0.7295495,
+            "right": 0.8896678,
+            "bottom": 0.7535013
+          }
+        },
+        "u4_p028_s021": {
+          "speaker": "Lingling",
+          "text": "This is my family.",
+          "rect": {
+            "left": 0.1222778,
+            "top": 0.7354557,
+            "right": 0.3135285,
+            "bottom": 0.7594075
+          }
+        },
+        "u4_p028_s011": {
+          "speaker": "Peter",
+          "text": "Nice to meet you.",
+          "rect": {
+            "left": 0.7207972,
+            "top": 0.2688367,
+            "right": 0.920218,
+            "bottom": 0.2927885
+          }
+        },
+        "u4_p028_s012": {
+          "speaker": "Peter",
+          "text": "Hello, Lingling!",
+          "rect": {
+            "left": 0.3367037,
+            "top": 0.3058654,
+            "right": 0.4310682,
+            "bottom": 0.3589955
+          }
+        },
+        "u4_p028_s014": {
+          "speaker": "Peter",
+          "text": "Who’s he?",
+          "rect": {
+            "left": 0.1419587,
+            "top": 0.4592494,
+            "right": 0.2631717,
+            "bottom": 0.4832011
+          }
+        },
+        "u4_p028_s015": {
+          "speaker": "Peter",
+          "text": "Say cheese!",
+          "rect": {
+            "left": 0.7428356,
+            "top": 0.4893246,
+            "right": 0.874951,
+            "bottom": 0.5132764
+          }
+        },
+        "u4_p028_s013": {
+          "speaker": "Mother",
+          "text": "Nice to meet you too, Peter.",
+          "rect": {
+            "left": 0.5111071,
+            "top": 0.4097139,
+            "right": 0.8257773,
+            "bottom": 0.4336656
+          }
+        },
+        "u4_p028_s019": {
+          "speaker": "Anne",
+          "text": "Who’s he?",
+          "rect": {
+            "left": 0.5262521,
+            "top": 0.7227836,
+            "right": 0.647465,
+            "bottom": 0.7467354
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.71,
+            0.49,
+            0.95
+          ],
+          "anchor": 0.71
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.49,
+            0.71,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.71
+        }
+      ]
+    },
+    "29": {
+      "speakers": {
+        "u4_p029_s009": {
+          "speaker": "Mingming",
+          "text": "Who’s she?",
+          "rect": {
+            "left": 0.2863743,
+            "top": 0.4273676,
+            "right": 0.4176754,
+            "bottom": 0.4513193
+          }
+        },
+        "u4_p029_s015": {
+          "speaker": "Mingming",
+          "text": "OK!",
+          "rect": {
+            "left": 0.1802564,
+            "top": 0.7066505,
+            "right": 0.2262039,
+            "bottom": 0.7306023
+          }
+        },
+        "u4_p029_s016": {
+          "speaker": "Mingming",
+          "text": "This is my sister.",
+          "rect": {
+            "left": 0.2337961,
+            "top": 0.7066505,
+            "right": 0.4140658,
+            "bottom": 0.7306023
+          }
+        },
+        "u4_p029_s017": {
+          "speaker": "Mingming",
+          "text": "He’s my grandfather.",
+          "rect": {
+            "left": 0.4887664,
+            "top": 0.8840938,
+            "right": 0.7255968,
+            "bottom": 0.9080456
+          }
+        },
+        "u4_p029_s010": {
+          "speaker": "Lingling",
+          "text": "She’s my mother.",
+          "rect": {
+            "left": 0.5174751,
+            "top": 0.4359493,
+            "right": 0.7101706,
+            "bottom": 0.4599011
+          }
+        },
+        "u4_p029_s013": {
+          "speaker": "Miss Li",
+          "text": "Put your photos in the box, please.",
+          "rect": {
+            "left": 0.1839798,
+            "top": 0.5479711,
+            "right": 0.3870261,
+            "bottom": 0.6010994
+          }
+        },
+        "u4_p029_s014": {
+          "speaker": "Miss Li",
+          "text": "Who’s he?",
+          "rect": {
+            "left": 0.6107019,
+            "top": 0.6319935,
+            "right": 0.7319148,
+            "bottom": 0.6559452
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.2,
+            0.42,
+            0.87,
+            0.48
+          ],
+          "anchor": 0.42
+        }
+      ],
+      "scene_assignments": {
+        "u4_p029_s014": {
+          "sceneId": "scene-2",
+          "text": "Who’s he?",
+          "rect": {
+            "left": 0.6107019,
+            "top": 0.6319935,
+            "right": 0.7319148,
+            "bottom": 0.6559452
+          }
+        }
+      }
+    },
+    "31": {
+      "speakers": {
+        "u4_p031_s003": {
+          "speaker": "Tim",
+          "text": "Good afternoon, Uncle Ben and Aunt Carol.",
+          "rect": {
+            "left": 0.2585108,
+            "top": 0.1453404,
+            "right": 0.514046,
+            "bottom": 0.1984687
+          }
+        },
+        "u4_p031_s007": {
+          "speaker": "Tim",
+          "text": "This is my cousin, Lily.",
+          "rect": {
+            "left": 0.1116392,
+            "top": 0.3923386,
+            "right": 0.3559305,
+            "bottom": 0.4162904
+          }
+        },
+        "u4_p031_s011": {
+          "speaker": "Tim",
+          "text": "She is my cousin too. She’s Lucy.",
+          "rect": {
+            "left": 0.3138298,
+            "top": 0.6348138,
+            "right": 0.4967791,
+            "bottom": 0.6879422
+          }
+        },
+        "u4_p031_s004": {
+          "speaker": "Dino",
+          "text": "Hello, I’m Dino!",
+          "rect": {
+            "left": 0.7049743,
+            "top": 0.1870071,
+            "right": 0.8817235,
+            "bottom": 0.2109589
+          }
+        },
+        "u4_p031_s008": {
+          "speaker": "Dino",
+          "text": "Nice to meet you.",
+          "rect": {
+            "left": 0.2496712,
+            "top": 0.4430848,
+            "right": 0.4490922,
+            "bottom": 0.4670365
+          }
+        },
+        "u4_p031_s009": {
+          "speaker": "Dino",
+          "text": "Lily?",
+          "rect": {
+            "left": 0.8008939,
+            "top": 0.5148453,
+            "right": 0.8518066,
+            "bottom": 0.5387971
+          }
+        },
+        "u4_p031_s012": {
+          "speaker": "Dino",
+          "text": "Lucy...",
+          "rect": {
+            "left": 0.5404488,
+            "top": 0.671499,
+            "right": 0.6118789,
+            "bottom": 0.6954507
+          }
+        },
+        "u4_p031_s013": {
+          "speaker": "Dino",
+          "text": "Lily...",
+          "rect": {
+            "left": 0.6194711,
+            "top": 0.671499,
+            "right": 0.67837,
+            "bottom": 0.6954507
+          }
+        },
+        "u4_p031_s005": {
+          "speaker": "Uncle Ben",
+          "text": "Good afternoon, Tim.",
+          "rect": {
+            "left": 0.1159045,
+            "top": 0.3209364,
+            "right": 0.3563866,
+            "bottom": 0.3448881
+          }
+        },
+        "u4_p031_s006": {
+          "speaker": "Aunt Carol",
+          "text": "Hi, Dino!",
+          "rect": {
+            "left": 0.6739329,
+            "top": 0.339188,
+            "right": 0.7740242,
+            "bottom": 0.3631397
+          }
+        },
+        "u4_p031_s010": {
+          "speaker": "Lily",
+          "text": "Nice to meet you too.",
+          "rect": {
+            "left": 0.160473,
+            "top": 0.5938434,
+            "right": 0.4039762,
+            "bottom": 0.6177951
+          }
+        },
+        "u4_p031_s014": {
+          "speaker": "Lucy",
+          "text": "Hi!",
+          "rect": {
+            "left": 0.6469055,
+            "top": 0.8382043,
+            "right": 0.6797439,
+            "bottom": 0.8621561
+          }
+        }
+      },
+      "regions": []
+    },
+    "32": {
+      "speakers": {
+        "u4_p032_s015": {
+          "speaker": "Peter",
+          "text": "This is my father.",
+          "rect": {
+            "left": 0.1047873,
+            "top": 0.7299264,
+            "right": 0.2937787,
+            "bottom": 0.7538782
+          }
+        },
+        "u4_p032_s019": {
+          "speaker": "Peter",
+          "text": "His name is Jason.",
+          "rect": {
+            "left": 0.1047873,
+            "top": 0.7591029,
+            "right": 0.3147165,
+            "bottom": 0.7830547
+          }
+        }
+      },
+      "regions": []
+    },
+    "33": {
+      "speakers": {
+        "u5_p033_s009": {
+          "speaker": "Lingling",
+          "text": "Is this a pen?",
+          "rect": {
+            "left": 0.3699467,
+            "top": 0.2156434,
+            "right": 0.5216337,
+            "bottom": 0.2395952
+          }
+        },
+        "u5_p033_s010": {
+          "speaker": "Lingling",
+          "text": "Is this your pen, Benny?",
+          "rect": {
+            "left": 0.603438,
+            "top": 0.2266371,
+            "right": 0.873921,
+            "bottom": 0.2505888
+          }
+        },
+        "u5_p033_s012": {
+          "speaker": "Lingling",
+          "text": "Take care of your things, please.",
+          "rect": {
+            "left": 0.409576,
+            "top": 0.4079184,
+            "right": 0.5452642,
+            "bottom": 0.4902252
+          }
+        },
+        "u5_p033_s013": {
+          "speaker": "Lingling",
+          "text": "Is this your pen, Peter?",
+          "rect": {
+            "left": 0.0946807,
+            "top": 0.4094372,
+            "right": 0.3532895,
+            "bottom": 0.4333889
+          }
+        },
+        "u5_p033_s021": {
+          "speaker": "Lingling",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.3674903,
+            "top": 0.7148888,
+            "right": 0.4673716,
+            "bottom": 0.7388406
+          }
+        },
+        "u5_p033_s022": {
+          "speaker": "Lingling",
+          "text": "No, it isn’t.",
+          "rect": {
+            "left": 0.5089791,
+            "top": 0.8337332,
+            "right": 0.6348419,
+            "bottom": 0.8576851
+          }
+        },
+        "u5_p033_s011": {
+          "speaker": "Benny",
+          "text": "No, it isn’t.",
+          "rect": {
+            "left": 0.7378311,
+            "top": 0.3682792,
+            "right": 0.8636939,
+            "bottom": 0.392231
+          }
+        },
+        "u5_p033_s014": {
+          "speaker": "Peter",
+          "text": "OK.",
+          "rect": {
+            "left": 0.7073308,
+            "top": 0.4985618,
+            "right": 0.7524376,
+            "bottom": 0.5225136
+          }
+        },
+        "u5_p033_s015": {
+          "speaker": "Peter",
+          "text": "Thank you.",
+          "rect": {
+            "left": 0.7588476,
+            "top": 0.4985618,
+            "right": 0.8801919,
+            "bottom": 0.5225136
+          }
+        },
+        "u5_p033_s016": {
+          "speaker": "Peter",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.3145628,
+            "top": 0.5194407,
+            "right": 0.4144441,
+            "bottom": 0.5433924
+          }
+        },
+        "u5_p033_s019": {
+          "speaker": "Peter",
+          "text": "Is this your ruler?",
+          "rect": {
+            "left": 0.5696171,
+            "top": 0.7018638,
+            "right": 0.7664372,
+            "bottom": 0.7258157
+          }
+        },
+        "u5_p033_s020": {
+          "speaker": "Peter",
+          "text": "Is this your pencil?",
+          "rect": {
+            "left": 0.1174902,
+            "top": 0.7019882,
+            "right": 0.3290219,
+            "bottom": 0.7259401
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.69,
+            0.49,
+            0.95
+          ],
+          "anchor": 0.69
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.49,
+            0.69,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.69
+        }
+      ]
+    },
+    "34": {
+      "speakers": {
+        "u5_p034_s009": {
+          "speaker": "Lingling",
+          "text": "Is this a/your pencil case?",
+          "rect": {
+            "left": 0.26375,
+            "top": 0.4209767,
+            "right": 0.5610556,
+            "bottom": 0.4449285
+          }
+        },
+        "u5_p034_s015": {
+          "speaker": "Lingling",
+          "text": "No, it isn’t.",
+          "rect": {
+            "left": 0.3568534,
+            "top": 0.6036098,
+            "right": 0.4827164,
+            "bottom": 0.6275615
+          }
+        },
+        "u5_p034_s017": {
+          "speaker": "Lingling",
+          "text": "It’s a pencil.",
+          "rect": {
+            "left": 0.3568534,
+            "top": 0.6327882,
+            "right": 0.4943542,
+            "bottom": 0.6567399
+          }
+        },
+        "u5_p034_s018": {
+          "speaker": "Lingling",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.8036602,
+            "top": 0.7957155,
+            "right": 0.9035414,
+            "bottom": 0.8196673
+          }
+        },
+        "u5_p034_s010": {
+          "speaker": "Mingming",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.451026,
+            "top": 0.4694725,
+            "right": 0.5509071,
+            "bottom": 0.4934242
+          }
+        },
+        "u5_p034_s011": {
+          "speaker": "Mingming",
+          "text": "/ No, it isn’t.",
+          "rect": {
+            "left": 0.5584993,
+            "top": 0.4694725,
+            "right": 0.7064294,
+            "bottom": 0.4934242
+          }
+        },
+        "u5_p034_s014": {
+          "speaker": "Mingming",
+          "text": "Is this a pen?",
+          "rect": {
+            "left": 0.1537235,
+            "top": 0.594963,
+            "right": 0.3054106,
+            "bottom": 0.6189147
+          }
+        },
+        "u5_p034_s016": {
+          "speaker": "Mingming",
+          "text": "Is this your pencil?",
+          "rect": {
+            "left": 0.5962766,
+            "top": 0.6246632,
+            "right": 0.8078083,
+            "bottom": 0.6486149
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.2,
+            0.4,
+            0.9,
+            0.51
+          ],
+          "anchor": 0.4
+        }
+      ]
+    },
+    "36": {
+      "speakers": {
+        "u5_p036_s003": {
+          "speaker": "Tim",
+          "text": "Is this your pencil?",
+          "rect": {
+            "left": 0.5929955,
+            "top": 0.1902156,
+            "right": 0.8045271,
+            "bottom": 0.2141673
+          }
+        },
+        "u5_p036_s004": {
+          "speaker": "Tim",
+          "text": "Dino, is this your ruler?",
+          "rect": {
+            "left": 0.1228097,
+            "top": 0.2122234,
+            "right": 0.3839143,
+            "bottom": 0.2361751
+          }
+        },
+        "u5_p036_s007": {
+          "speaker": "Tim",
+          "text": "Is this...?",
+          "rect": {
+            "left": 0.1286608,
+            "top": 0.5081221,
+            "right": 0.2321673,
+            "bottom": 0.5320738
+          }
+        },
+        "u5_p036_s011": {
+          "speaker": "Tim",
+          "text": "Good!",
+          "rect": {
+            "left": 0.7414644,
+            "top": 0.7742947,
+            "right": 0.8133673,
+            "bottom": 0.7982465
+          }
+        },
+        "u5_p036_s005": {
+          "speaker": "Dino",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.4156104,
+            "top": 0.3051134,
+            "right": 0.5154917,
+            "bottom": 0.3290652
+          }
+        },
+        "u5_p036_s006": {
+          "speaker": "Dino",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.7679373,
+            "top": 0.3683665,
+            "right": 0.8678185,
+            "bottom": 0.3923182
+          }
+        },
+        "u5_p036_s008": {
+          "speaker": "Dino",
+          "text": "Yes, yes...",
+          "rect": {
+            "left": 0.4728096,
+            "top": 0.6495154,
+            "right": 0.5851431,
+            "bottom": 0.6734671
+          }
+        },
+        "u5_p036_s009": {
+          "speaker": "Dino",
+          "text": "And my football...",
+          "rect": {
+            "left": 0.4140657,
+            "top": 0.6975952,
+            "right": 0.6170856,
+            "bottom": 0.721547
+          }
+        },
+        "u5_p036_s010": {
+          "speaker": "Dino",
+          "text": "This is my bag...",
+          "rect": {
+            "left": 0.1174905,
+            "top": 0.698143,
+            "right": 0.2997304,
+            "bottom": 0.7220948
+          }
+        }
+      },
+      "regions": []
+    },
+    "38": {
+      "speakers": {
+        "u6_p038_s009": {
+          "speaker": "Man",
+          "text": "Follow me! Raise your hands.",
+          "rect": {
+            "left": 0.2699157,
+            "top": 0.196146,
+            "right": 0.4558861,
+            "bottom": 0.2492742
+          }
+        },
+        "u6_p038_s010": {
+          "speaker": "Man",
+          "text": "Touch your head.",
+          "rect": {
+            "left": 0.5986069,
+            "top": 0.2336853,
+            "right": 0.7924583,
+            "bottom": 0.257637
+          }
+        },
+        "u6_p038_s011": {
+          "speaker": "Man",
+          "text": "Good.",
+          "rect": {
+            "left": 0.6191243,
+            "top": 0.3784633,
+            "right": 0.6901865,
+            "bottom": 0.4024151
+          }
+        },
+        "u6_p038_s012": {
+          "speaker": "Man",
+          "text": "Touch your feet.",
+          "rect": {
+            "left": 0.1391183,
+            "top": 0.439557,
+            "right": 0.3181795,
+            "bottom": 0.4635088
+          }
+        },
+        "u6_p038_s013": {
+          "speaker": "Man",
+          "text": "Raise your leg.",
+          "rect": {
+            "left": 0.6373614,
+            "top": 0.5928278,
+            "right": 0.8021838,
+            "bottom": 0.6167795
+          }
+        },
+        "u6_p038_s017": {
+          "speaker": "Anne",
+          "text": "Touch your ear.",
+          "rect": {
+            "left": 0.234382,
+            "top": 0.707369,
+            "right": 0.4091084,
+            "bottom": 0.7313208
+          }
+        },
+        "u6_p038_s016": {
+          "speaker": "Mingming",
+          "text": "Raise your leg.",
+          "rect": {
+            "left": 0.6399569,
+            "top": 0.6897004,
+            "right": 0.8047793,
+            "bottom": 0.7136523
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.68,
+            0.51,
+            0.95
+          ],
+          "anchor": 0.68
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.51,
+            0.68,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.68
+        }
+      ]
+    },
+    "39": {
+      "speakers": {
+        "u6_p039_s003": {
+          "speaker": "Lingling",
+          "text": "Raise your hand.",
+          "rect": {
+            "left": 0.2588936,
+            "top": 0.1359454,
+            "right": 0.4471758,
+            "bottom": 0.1598972
+          }
+        },
+        "u6_p039_s014": {
+          "speaker": "Anne",
+          "text": "Follow me!",
+          "rect": {
+            "left": 0.1068521,
+            "top": 0.5400763,
+            "right": 0.2271982,
+            "bottom": 0.5640281
+          }
+        },
+        "u6_p039_s015": {
+          "speaker": "Anne",
+          "text": "Touch your head.",
+          "rect": {
+            "left": 0.2347905,
+            "top": 0.5400763,
+            "right": 0.428642,
+            "bottom": 0.5640281
+          }
+        },
+        "u6_p039_s016": {
+          "speaker": "Anne",
+          "text": "Raise your hand.",
+          "rect": {
+            "left": 0.5174909,
+            "top": 0.5438362,
+            "right": 0.7057729,
+            "bottom": 0.5677879
+          }
+        },
+        "u6_p039_s017": {
+          "speaker": "Anne",
+          "text": "Benny, you’re out.",
+          "rect": {
+            "left": 0.6094593,
+            "top": 0.7224067,
+            "right": 0.8138978,
+            "bottom": 0.7463585
+          }
+        },
+        "u6_p039_s018": {
+          "speaker": "Anne",
+          "text": "Touch your ears and raise your leg.",
+          "rect": {
+            "left": 0.0908945,
+            "top": 0.7310534,
+            "right": 0.4860322,
+            "bottom": 0.7550052
+          }
+        },
+        "u6_p039_s019": {
+          "speaker": "Benny",
+          "text": "OK.",
+          "rect": {
+            "left": 0.5385652,
+            "top": 0.7517373,
+            "right": 0.583672,
+            "bottom": 0.7756891
+          }
+        }
+      },
+      "regions": [],
+      "scene_assignments": {
+        "u6_p039_s017": {
+          "sceneId": "scene-4",
+          "text": "Benny, you’re out.",
+          "rect": {
+            "left": 0.6094593,
+            "top": 0.7224067,
+            "right": 0.8138978,
+            "bottom": 0.7463585
+          }
+        }
+      }
+    },
+    "41": {
+      "speakers": {
+        "u6_p041_s003": {
+          "speaker": "Robbie",
+          "text": "Hello, I’m Robbie!",
+          "rect": {
+            "left": 0.5561455,
+            "top": 0.1475945,
+            "right": 0.7579833,
+            "bottom": 0.1715462
+          }
+        },
+        "u6_p041_s009": {
+          "speaker": "Robbie",
+          "text": "Raise my hand.",
+          "rect": {
+            "left": 0.3302569,
+            "top": 0.6070335,
+            "right": 0.5018309,
+            "bottom": 0.6309853
+          }
+        },
+        "u6_p041_s010": {
+          "speaker": "Robbie",
+          "text": "Touch my nose.",
+          "rect": {
+            "left": 0.7185537,
+            "top": 0.6096181,
+            "right": 0.8907581,
+            "bottom": 0.6335698
+          }
+        },
+        "u6_p041_s012": {
+          "speaker": "Robbie",
+          "text": "Oh, oh, oh! I love my body!",
+          "rect": {
+            "left": 0.4837356,
+            "top": 0.6490252,
+            "right": 0.6424369,
+            "bottom": 0.7021554
+          }
+        },
+        "u6_p041_s004": {
+          "speaker": "Dino",
+          "text": "Is this a robot, Tim?",
+          "rect": {
+            "left": 0.1111075,
+            "top": 0.1645129,
+            "right": 0.3359322,
+            "bottom": 0.1884647
+          }
+        },
+        "u6_p041_s007": {
+          "speaker": "Dino",
+          "text": "Hello, Robbie!",
+          "rect": {
+            "left": 0.1148936,
+            "top": 0.3904522,
+            "right": 0.2720712,
+            "bottom": 0.4144039
+          }
+        },
+        "u6_p041_s008": {
+          "speaker": "Dino",
+          "text": "Raise your hand.",
+          "rect": {
+            "left": 0.1148936,
+            "top": 0.4196287,
+            "right": 0.3031232,
+            "bottom": 0.4435805
+          }
+        },
+        "u6_p041_s011": {
+          "speaker": "Dino",
+          "text": "Raise your leg and shake your body!",
+          "rect": {
+            "left": 0.1175533,
+            "top": 0.6483475,
+            "right": 0.3253283,
+            "bottom": 0.7014759
+          }
+        },
+        "u6_p041_s005": {
+          "speaker": "Tim",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.4169581,
+            "top": 0.29181,
+            "right": 0.5168393,
+            "bottom": 0.3157617
+          }
+        },
+        "u6_p041_s006": {
+          "speaker": "Tim",
+          "text": "Touch your nose.",
+          "rect": {
+            "left": 0.529176,
+            "top": 0.3810535,
+            "right": 0.7180886,
+            "bottom": 0.4050052
+          }
+        }
+      },
+      "regions": []
+    },
+    "43": {
+      "speakers": {
+        "u6_p043_s003": {
+          "speaker": "Boy",
+          "text": "Thanks, Mum!",
+          "rect": {
+            "left": 0.3419342,
+            "top": 0.2145127,
+            "right": 0.4977984,
+            "bottom": 0.2384644
+          }
+        },
+        "u6_p043_s005": {
+          "speaker": "Boy",
+          "text": "I love you, Dad!",
+          "rect": {
+            "left": 0.5568575,
+            "top": 0.4735351,
+            "right": 0.7376524,
+            "bottom": 0.4974868
+          }
+        },
+        "u6_p043_s007": {
+          "speaker": "Boy",
+          "text": "Grandpa and Grandma!",
+          "rect": {
+            "left": 0.6185543,
+            "top": 0.8833171,
+            "right": 0.8944228,
+            "bottom": 0.9072689
+          }
+        },
+        "u6_p043_s004": {
+          "speaker": "Man",
+          "text": "Thank you, Mum!",
+          "rect": {
+            "left": 0.6882031,
+            "top": 0.3406994,
+            "right": 0.8827113,
+            "bottom": 0.3646511
+          }
+        },
+        "u6_p043_s006": {
+          "speaker": "Girl",
+          "text": "I love you, Mum!",
+          "rect": {
+            "left": 0.3437863,
+            "top": 0.5395119,
+            "right": 0.5338548,
+            "bottom": 0.5634636
+          }
+        },
+        "u6_p043_s008": {
+          "speaker": "Children",
+          "text": "We miss you!",
+          "rect": {
+            "left": 0.2238734,
+            "top": 0.8983547,
+            "right": 0.3754292,
+            "bottom": 0.9223065
+          }
+        }
+      },
+      "regions": []
+    },
+    "44": {
+      "speakers": {
+        "u6_p044_s003": {
+          "speaker": "Boy",
+          "text": "My ears",
+          "rect": {
+            "left": 0.2204524,
+            "top": 0.2547386,
+            "right": 0.3106379,
+            "bottom": 0.2786904
+          }
+        },
+        "u6_p044_s005": {
+          "speaker": "Boy",
+          "text": "can",
+          "rect": {
+            "left": 0.3485177,
+            "top": 0.301918,
+            "right": 0.3884491,
+            "bottom": 0.3258698
+          }
+        },
+        "u6_p044_s007": {
+          "speaker": "Boy",
+          "text": "hear.",
+          "rect": {
+            "left": 0.3394963,
+            "top": 0.3218128,
+            "right": 0.3974758,
+            "bottom": 0.3457645
+          }
+        },
+        "u6_p044_s010": {
+          "speaker": "Boy",
+          "text": "I love my body!",
+          "rect": {
+            "left": 0.4037227,
+            "top": 0.4065258,
+            "right": 0.6101752,
+            "bottom": 0.4383713
+          }
+        },
+        "u6_p044_s013": {
+          "speaker": "Boy",
+          "text": "My hands",
+          "rect": {
+            "left": 0.1441492,
+            "top": 0.5654522,
+            "right": 0.2543803,
+            "bottom": 0.5894039
+          }
+        },
+        "u6_p044_s015": {
+          "speaker": "Boy",
+          "text": "can",
+          "rect": {
+            "left": 0.2709928,
+            "top": 0.6233857,
+            "right": 0.3109243,
+            "bottom": 0.6473374
+          }
+        },
+        "u6_p044_s016": {
+          "speaker": "Boy",
+          "text": "touch.",
+          "rect": {
+            "left": 0.2566225,
+            "top": 0.6432787,
+            "right": 0.3252941,
+            "bottom": 0.6672304
+          }
+        },
+        "u6_p044_s020": {
+          "speaker": "Boy",
+          "text": "My tongue",
+          "rect": {
+            "left": 0.3994697,
+            "top": 0.7084979,
+            "right": 0.5198131,
+            "bottom": 0.7324497
+          }
+        },
+        "u6_p044_s021": {
+          "speaker": "Boy",
+          "text": "can",
+          "rect": {
+            "left": 0.5344091,
+            "top": 0.7544017,
+            "right": 0.5743406,
+            "bottom": 0.7783535
+          }
+        },
+        "u6_p044_s022": {
+          "speaker": "Boy",
+          "text": "taste.",
+          "rect": {
+            "left": 0.5237065,
+            "top": 0.7742947,
+            "right": 0.5850485,
+            "bottom": 0.7982465
+          }
+        },
+        "u6_p044_s006": {
+          "speaker": "Girl",
+          "text": "My eyes",
+          "rect": {
+            "left": 0.7021607,
+            "top": 0.301918,
+            "right": 0.7948439,
+            "bottom": 0.3258698
+          }
+        },
+        "u6_p044_s008": {
+          "speaker": "Girl",
+          "text": "can",
+          "rect": {
+            "left": 0.8325343,
+            "top": 0.3280458,
+            "right": 0.8724658,
+            "bottom": 0.3519976
+          }
+        },
+        "u6_p044_s009": {
+          "speaker": "Girl",
+          "text": "see.",
+          "rect": {
+            "left": 0.8308399,
+            "top": 0.3479406,
+            "right": 0.8741603,
+            "bottom": 0.3718924
+          }
+        },
+        "u6_p044_s014": {
+          "speaker": "Girl",
+          "text": "My nose",
+          "rect": {
+            "left": 0.6612809,
+            "top": 0.594211,
+            "right": 0.7555664,
+            "bottom": 0.6181627
+          }
+        },
+        "u6_p044_s017": {
+          "speaker": "Girl",
+          "text": "can",
+          "rect": {
+            "left": 0.788946,
+            "top": 0.6678951,
+            "right": 0.8288775,
+            "bottom": 0.6918469
+          }
+        },
+        "u6_p044_s019": {
+          "speaker": "Girl",
+          "text": "smell.",
+          "rect": {
+            "left": 0.7777573,
+            "top": 0.6877899,
+            "right": 0.8400714,
+            "bottom": 0.7117417
+          }
+        }
+      },
+      "regions": []
+    },
+    "45": {
+      "speakers": {
+        "u6_p045_s002": {
+          "speaker": "Dino",
+          "text": "Now, I can...",
+          "rect": {
+            "left": 0.2068855,
+            "top": 0.1435208,
+            "right": 0.3583099,
+            "bottom": 0.1676768
+          }
+        }
+      },
+      "regions": []
+    },
+    "47": {
+      "speakers": {
+        "u6_p047_s003": {
+          "speaker": "Mingming",
+          "text": "This is my",
+          "rect": {
+            "left": 0.6124909,
+            "top": 0.190041,
+            "right": 0.7204898,
+            "bottom": 0.2139928
+          }
+        },
+        "u6_p047_s004": {
+          "speaker": "Mingming",
+          "text": "family.",
+          "rect": {
+            "left": 0.6124909,
+            "top": 0.213913,
+            "right": 0.6880718,
+            "bottom": 0.2378647
+          }
+        },
+        "u6_p047_s006": {
+          "speaker": "Lingling",
+          "text": "A book, a",
+          "rect": {
+            "left": 0.5715743,
+            "top": 0.3386366,
+            "right": 0.6825417,
+            "bottom": 0.3625883
+          }
+        },
+        "u6_p047_s007": {
+          "speaker": "Lingling",
+          "text": "pencil case...",
+          "rect": {
+            "left": 0.5715743,
+            "top": 0.3625085,
+            "right": 0.7156533,
+            "bottom": 0.3864602
+          }
+        },
+        "u6_p047_s009": {
+          "speaker": "Lingling",
+          "text": "Raise your hand.",
+          "rect": {
+            "left": 0.4929146,
+            "top": 0.4629628,
+            "right": 0.6811966,
+            "bottom": 0.4869146
+          }
+        },
+        "u6_p047_s011": {
+          "speaker": "Dino",
+          "text": "A, B, C...",
+          "rect": {
+            "left": 0.2652238,
+            "top": 0.6178954,
+            "right": 0.3682575,
+            "bottom": 0.6418471
+          }
+        },
+        "u6_p047_s012": {
+          "speaker": "Dino",
+          "text": "Z.",
+          "rect": {
+            "left": 0.3758498,
+            "top": 0.6178954,
+            "right": 0.3979434,
+            "bottom": 0.6418471
+          }
+        },
+        "u6_p047_s015": {
+          "speaker": "Dino",
+          "text": "Excellent",
+          "rect": {
+            "left": 0.158095,
+            "top": 0.904416,
+            "right": 0.2446628,
+            "bottom": 0.9244686
+          }
+        },
+        "u6_p047_s016": {
+          "speaker": "Dino",
+          "text": "Fine",
+          "rect": {
+            "left": 0.4472681,
+            "top": 0.904416,
+            "right": 0.4973232,
+            "bottom": 0.9240972
+          }
+        },
+        "u6_p047_s017": {
+          "speaker": "Dino",
+          "text": "Try again",
+          "rect": {
+            "left": 0.6899212,
+            "top": 0.904416,
+            "right": 0.7811331,
+            "bottom": 0.9240972
+          }
+        }
+      },
+      "regions": []
+    },
+    "48": {
+      "speakers": {
+        "u7_p048_s008": {
+          "speaker": "Mingming",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.5499378,
+            "top": 0.2818413,
+            "right": 0.7509611,
+            "bottom": 0.305793
+          }
+        },
+        "u7_p048_s009": {
+          "speaker": "Mingming",
+          "text": "Look!",
+          "rect": {
+            "left": 0.2057884,
+            "top": 0.371133,
+            "right": 0.264845,
+            "bottom": 0.3950847
+          }
+        },
+        "u7_p048_s010": {
+          "speaker": "Mingming",
+          "text": "A rainbow!",
+          "rect": {
+            "left": 0.2724372,
+            "top": 0.371133,
+            "right": 0.3988256,
+            "bottom": 0.3950847
+          }
+        },
+        "u7_p048_s011": {
+          "speaker": "Mingming",
+          "text": "It’s beautiful!",
+          "rect": {
+            "left": 0.5260025,
+            "top": 0.4522941,
+            "right": 0.6739328,
+            "bottom": 0.4762458
+          }
+        },
+        "u7_p048_s016": {
+          "speaker": "Mingming",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.1111075,
+            "top": 0.7662941,
+            "right": 0.312131,
+            "bottom": 0.7902459
+          }
+        },
+        "u7_p048_s012": {
+          "speaker": "Peter",
+          "text": "It’s red and yellow.",
+          "rect": {
+            "left": 0.2680847,
+            "top": 0.470076,
+            "right": 0.4842138,
+            "bottom": 0.4940277
+          }
+        },
+        "u7_p048_s013": {
+          "speaker": "Lingling",
+          "text": "It’s blue and purple.",
+          "rect": {
+            "left": 0.205164,
+            "top": 0.5944412,
+            "right": 0.4308556,
+            "bottom": 0.6183929
+          }
+        },
+        "u7_p048_s017": {
+          "speaker": "Anne",
+          "text": "It’s yellow now.",
+          "rect": {
+            "left": 0.7072599,
+            "top": 0.8534763,
+            "right": 0.8829846,
+            "bottom": 0.8774281
+          }
+        },
+        "u7_p048_s018": {
+          "speaker": "Anne",
+          "text": "It’s green.",
+          "rect": {
+            "left": 0.2318524,
+            "top": 0.8918222,
+            "right": 0.3453419,
+            "bottom": 0.915774
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.69,
+            0.51,
+            0.95
+          ],
+          "anchor": 0.69
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.51,
+            0.69,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.69
+        }
+      ]
+    },
+    "49": {
+      "speakers": {
+        "u7_p049_s007": {
+          "speaker": "Lingling",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.1568521,
+            "top": 0.2198118,
+            "right": 0.3578756,
+            "bottom": 0.2437635
+          }
+        },
+        "u7_p049_s018": {
+          "speaker": "Lingling",
+          "text": "It’s yellow.",
+          "rect": {
+            "left": 0.7573844,
+            "top": 0.5643252,
+            "right": 0.8787287,
+            "bottom": 0.5882769
+          }
+        },
+        "u7_p049_s011": {
+          "speaker": "Mingming",
+          "text": "It’s purple.",
+          "rect": {
+            "left": 0.111698,
+            "top": 0.3675866,
+            "right": 0.2325433,
+            "bottom": 0.3915384
+          }
+        },
+        "u7_p049_s019": {
+          "speaker": "Mingming",
+          "text": "It’s red.",
+          "rect": {
+            "left": 0.3568534,
+            "top": 0.5686123,
+            "right": 0.4438094,
+            "bottom": 0.5925641
+          }
+        },
+        "u7_p049_s016": {
+          "speaker": "Miss Li",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.0955121,
+            "top": 0.4997,
+            "right": 0.2965356,
+            "bottom": 0.5236517
+          }
+        },
+        "u7_p049_s017": {
+          "speaker": "Miss Li",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.5012634,
+            "top": 0.5152649,
+            "right": 0.7022867,
+            "bottom": 0.5392167
+          }
+        },
+        "u7_p049_s020": {
+          "speaker": "Miss Li",
+          "text": "What colour is it?",
+          "rect": {
+            "left": 0.0975915,
+            "top": 0.7135724,
+            "right": 0.2986149,
+            "bottom": 0.7375242
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.08,
+            0.21,
+            0.33,
+            0.42
+          ],
+          "anchor": 0.21
+        }
+      ]
+    },
+    "50": {
+      "speakers": {
+        "u7_p050_s005": {
+          "speaker": "Lingling",
+          "text": "This is a good way.",
+          "rect": {
+            "left": 0.6319155,
+            "top": 0.6088327,
+            "right": 0.8482547,
+            "bottom": 0.6327845
+          }
+        },
+        "u7_p050_s006": {
+          "speaker": "Lingling",
+          "text": "Let’s colour and say.",
+          "rect": {
+            "left": 0.6319155,
+            "top": 0.6380093,
+            "right": 0.860313,
+            "bottom": 0.661961
+          }
+        },
+        "u7_p050_s007": {
+          "speaker": "Lingling",
+          "text": "Red, yellow and blue.",
+          "rect": {
+            "left": 0.6319155,
+            "top": 0.6671858,
+            "right": 0.8717144,
+            "bottom": 0.6911376
+          }
+        },
+        "u7_p050_s008": {
+          "speaker": "Lingling",
+          "text": "With colours I play.",
+          "rect": {
+            "left": 0.6319155,
+            "top": 0.6963642,
+            "right": 0.8545334,
+            "bottom": 0.7203161
+          }
+        }
+      },
+      "regions": []
+    },
+    "51": {
+      "speakers": {
+        "u7_p051_s003": {
+          "speaker": "Tim",
+          "text": "What colour is this tree, Dino?",
+          "rect": {
+            "left": 0.5638301,
+            "top": 0.1422071,
+            "right": 0.7349573,
+            "bottom": 0.1953359
+          }
+        },
+        "u7_p051_s008": {
+          "speaker": "Tim",
+          "text": "Look! That’s brown too.",
+          "rect": {
+            "left": 0.1601064,
+            "top": 0.4641852,
+            "right": 0.292143,
+            "bottom": 0.5173141
+          }
+        },
+        "u7_p051_s009": {
+          "speaker": "Tim",
+          "text": "Amazing!",
+          "rect": {
+            "left": 0.4541771,
+            "top": 0.5490514,
+            "right": 0.5638309,
+            "bottom": 0.5730031
+          }
+        },
+        "u7_p051_s004": {
+          "speaker": "Dino",
+          "text": "It’s green and brown.",
+          "rect": {
+            "left": 0.7545817,
+            "top": 0.2704991,
+            "right": 0.8829797,
+            "bottom": 0.323628
+          }
+        },
+        "u7_p051_s005": {
+          "speaker": "Dino",
+          "text": "Tim, it’s a black ant.",
+          "rect": {
+            "left": 0.3628493,
+            "top": 0.2889772,
+            "right": 0.473265,
+            "bottom": 0.342106
+          }
+        },
+        "u7_p051_s006": {
+          "speaker": "Dino",
+          "text": "Tim, can you find me?",
+          "rect": {
+            "left": 0.7468089,
+            "top": 0.3449639,
+            "right": 0.8889859,
+            "bottom": 0.3980928
+          }
+        },
+        "u7_p051_s007": {
+          "speaker": "Dino",
+          "text": "It’s green now!",
+          "rect": {
+            "left": 0.4590428,
+            "top": 0.3768428,
+            "right": 0.6277532,
+            "bottom": 0.4007945
+          }
+        }
+      },
+      "regions": []
+    },
+    "53": {
+      "speakers": {
+        "u8_p053_s008": {
+          "speaker": "Peter",
+          "text": "It’s a cow.",
+          "rect": {
+            "left": 0.495965,
+            "top": 0.1980075,
+            "right": 0.613106,
+            "bottom": 0.2219592
+          }
+        },
+        "u8_p053_s017": {
+          "speaker": "Peter",
+          "text": "What’s that?",
+          "rect": {
+            "left": 0.5061802,
+            "top": 0.7262027,
+            "right": 0.6539527,
+            "bottom": 0.7501546
+          }
+        },
+        "u8_p053_s010": {
+          "speaker": "Mr Yang",
+          "text": "What’s that?",
+          "rect": {
+            "left": 0.2114675,
+            "top": 0.253542,
+            "right": 0.3592403,
+            "bottom": 0.2774937
+          }
+        },
+        "u8_p053_s013": {
+          "speaker": "Mr Yang",
+          "text": "It’s a pig.",
+          "rect": {
+            "left": 0.2707553,
+            "top": 0.4243231,
+            "right": 0.379122,
+            "bottom": 0.4482748
+          }
+        },
+        "u8_p053_s020": {
+          "speaker": "Mr Yang",
+          "text": "It’s a cow.",
+          "rect": {
+            "left": 0.2084488,
+            "top": 0.8937375,
+            "right": 0.3255899,
+            "bottom": 0.9176893
+          }
+        },
+        "u8_p053_s011": {
+          "speaker": "Anne",
+          "text": "What’s this?",
+          "rect": {
+            "left": 0.7378035,
+            "top": 0.3720391,
+            "right": 0.8796126,
+            "bottom": 0.3959908
+          }
+        },
+        "u8_p053_s019": {
+          "speaker": "Anne",
+          "text": "What’s this?",
+          "rect": {
+            "left": 0.1138916,
+            "top": 0.7542309,
+            "right": 0.2557008,
+            "bottom": 0.7781827
+          }
+        },
+        "u8_p053_s012": {
+          "speaker": "Lingling",
+          "text": "It’s black and white.",
+          "rect": {
+            "left": 0.4233417,
+            "top": 0.3997065,
+            "right": 0.6507671,
+            "bottom": 0.4236583
+          }
+        },
+        "u8_p053_s018": {
+          "speaker": "Lingling",
+          "text": "It’s a dog.",
+          "rect": {
+            "left": 0.7183555,
+            "top": 0.7453471,
+            "right": 0.8342355,
+            "bottom": 0.769299
+          }
+        },
+        "u8_p053_s014": {
+          "speaker": "Mingming",
+          "text": "It’s lovely.",
+          "rect": {
+            "left": 0.544556,
+            "top": 0.4455051,
+            "right": 0.6587285,
+            "bottom": 0.4694569
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.7,
+            0.49,
+            0.95
+          ],
+          "anchor": 0.7
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.49,
+            0.7,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.7
+        }
+      ],
+      "scene_assignments": {
+        "u8_p053_s009": {
+          "sceneId": "scene-1",
+          "text": "Moo, moo…",
+          "rect": {
+            "left": 0.310445,
+            "top": 0.2073423,
+            "right": 0.4511509,
+            "bottom": 0.231294
+          }
+        }
+      }
+    },
+    "54": {
+      "speakers": {
+        "u8_p054_s003": {
+          "speaker": "Anne",
+          "text": "What’s this? / What’s that?",
+          "rect": {
+            "left": 0.1743981,
+            "top": 0.1242872,
+            "right": 0.3382748,
+            "bottom": 0.1774161
+          }
+        },
+        "u8_p054_s005": {
+          "speaker": "Mingming",
+          "text": "It’s a sheep. / It’s a duck.",
+          "rect": {
+            "left": 0.0925532,
+            "top": 0.196012,
+            "right": 0.251202,
+            "bottom": 0.2491408
+          }
+        },
+        "u8_p054_s016": {
+          "speaker": "Mingming",
+          "text": "What’s this?",
+          "rect": {
+            "left": 0.188345,
+            "top": 0.6293622,
+            "right": 0.3301543,
+            "bottom": 0.653314
+          }
+        },
+        "u8_p054_s020": {
+          "speaker": "Mingming",
+          "text": "It’s a cat.",
+          "rect": {
+            "left": 0.6547249,
+            "top": 0.8518036,
+            "right": 0.7615414,
+            "bottom": 0.8757555
+          }
+        },
+        "u8_p054_s015": {
+          "speaker": "Lingling",
+          "text": "What’s that?",
+          "rect": {
+            "left": 0.7079181,
+            "top": 0.6047742,
+            "right": 0.8556907,
+            "bottom": 0.6287259
+          }
+        },
+        "u8_p054_s017": {
+          "speaker": "Lingling",
+          "text": "Quack, quack!",
+          "rect": {
+            "left": 0.0978096,
+            "top": 0.6694358,
+            "right": 0.2613447,
+            "bottom": 0.6933876
+          }
+        },
+        "u8_p054_s019": {
+          "speaker": "Lingling",
+          "text": "It’s a duck.",
+          "rect": {
+            "left": 0.2241206,
+            "top": 0.8518036,
+            "right": 0.3484074,
+            "bottom": 0.8757555
+          }
+        },
+        "u8_p054_s018": {
+          "speaker": "Peter",
+          "text": "Meow, meow!",
+          "rect": {
+            "left": 0.5132355,
+            "top": 0.6706479,
+            "right": 0.6710961,
+            "bottom": 0.6945997
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.07,
+            0.11,
+            0.32,
+            0.28
+          ],
+          "anchor": 0.11
+        }
+      ]
+    },
+    "55": {
+      "speakers": {
+        "u8_p055_s006": {
+          "speaker": "Boy",
+          "text": "This is “o”.",
+          "rect": {
+            "left": 0.4830478,
+            "top": 0.5429179,
+            "right": 0.6023168,
+            "bottom": 0.5668697
+          }
+        },
+        "u8_p055_s007": {
+          "speaker": "Boy",
+          "text": "This is “g”.",
+          "rect": {
+            "left": 0.7569841,
+            "top": 0.5429179,
+            "right": 0.8766471,
+            "bottom": 0.5668697
+          }
+        },
+        "u8_p055_s008": {
+          "speaker": "Boy",
+          "text": "This is “d”.",
+          "rect": {
+            "left": 0.1517338,
+            "top": 0.5429181,
+            "right": 0.2714231,
+            "bottom": 0.5668698
+          }
+        }
+      },
+      "regions": []
+    },
+    "56": {
+      "speakers": {
+        "u8_p056_s003": {
+          "speaker": "Dino",
+          "text": "Tim, what’s that?",
+          "rect": {
+            "left": 0.7062819,
+            "top": 0.1149248,
+            "right": 0.8999231,
+            "bottom": 0.1388765
+          }
+        },
+        "u8_p056_s004": {
+          "speaker": "Dino",
+          "text": "Quack, quack!",
+          "rect": {
+            "left": 0.3272733,
+            "top": 0.1235726,
+            "right": 0.4908084,
+            "bottom": 0.1475243
+          }
+        },
+        "u8_p056_s006": {
+          "speaker": "Dino",
+          "text": "Look!",
+          "rect": {
+            "left": 0.3132354,
+            "top": 0.2927442,
+            "right": 0.3722919,
+            "bottom": 0.3166959
+          }
+        },
+        "u8_p056_s007": {
+          "speaker": "Dino",
+          "text": "A white duck.",
+          "rect": {
+            "left": 0.3798841,
+            "top": 0.2927442,
+            "right": 0.5331212,
+            "bottom": 0.3166959
+          }
+        },
+        "u8_p056_s009": {
+          "speaker": "Dino",
+          "text": "A goose?",
+          "rect": {
+            "left": 0.776811,
+            "top": 0.4150311,
+            "right": 0.8835225,
+            "bottom": 0.4389829
+          }
+        },
+        "u8_p056_s012": {
+          "speaker": "Dino",
+          "text": "What’s this?",
+          "rect": {
+            "left": 0.3768106,
+            "top": 0.4996176,
+            "right": 0.51862,
+            "bottom": 0.5235694
+          }
+        },
+        "u8_p056_s014": {
+          "speaker": "Dino",
+          "text": "I see.",
+          "rect": {
+            "left": 0.7428197,
+            "top": 0.5722116,
+            "right": 0.8033737,
+            "bottom": 0.5961633
+          }
+        },
+        "u8_p056_s005": {
+          "speaker": "Tim",
+          "text": "It’s a duck.",
+          "rect": {
+            "left": 0.659575,
+            "top": 0.241812,
+            "right": 0.7838616,
+            "bottom": 0.2657637
+          }
+        },
+        "u8_p056_s010": {
+          "speaker": "Tim",
+          "text": "No.",
+          "rect": {
+            "left": 0.2270776,
+            "top": 0.4222629,
+            "right": 0.2694785,
+            "bottom": 0.4462147
+          }
+        },
+        "u8_p056_s011": {
+          "speaker": "Tim",
+          "text": "It’s a goose.",
+          "rect": {
+            "left": 0.2770708,
+            "top": 0.4222629,
+            "right": 0.4154386,
+            "bottom": 0.4462147
+          }
+        },
+        "u8_p056_s013": {
+          "speaker": "Tim",
+          "text": "They’re different.",
+          "rect": {
+            "left": 0.6213793,
+            "top": 0.5004293,
+            "right": 0.8103707,
+            "bottom": 0.524381
+          }
+        },
+        "u8_p056_s015": {
+          "speaker": "Tim",
+          "text": "It’s a swan.",
+          "rect": {
+            "left": 0.2159576,
+            "top": 0.5755837,
+            "right": 0.3457612,
+            "bottom": 0.5995354
+          }
+        }
+      },
+      "regions": []
+    },
+    "58": {
+      "speakers": {
+        "u9_p058_s008": {
+          "speaker": "Mr Yang",
+          "text": "Have some fruit, boys and girls.",
+          "rect": {
+            "left": 0.1968787,
+            "top": 0.2368812,
+            "right": 0.5505349,
+            "bottom": 0.2608329
+          }
+        },
+        "u9_p058_s009": {
+          "speaker": "Peter",
+          "text": "Thanks!",
+          "rect": {
+            "left": 0.6601591,
+            "top": 0.3940675,
+            "right": 0.7448821,
+            "bottom": 0.4180192
+          }
+        },
+        "u9_p058_s010": {
+          "speaker": "Peter",
+          "text": "I like apples.",
+          "rect": {
+            "left": 0.7522116,
+            "top": 0.3940675,
+            "right": 0.8941258,
+            "bottom": 0.4180192
+          }
+        },
+        "u9_p058_s011": {
+          "speaker": "Children",
+          "text": "Thank you, Mr Yang.",
+          "rect": {
+            "left": 0.5978728,
+            "top": 0.45643,
+            "right": 0.8327327,
+            "bottom": 0.4803817
+          }
+        },
+        "u9_p058_s012": {
+          "speaker": "Lingling",
+          "text": "I like oranges.",
+          "rect": {
+            "left": 0.1240514,
+            "top": 0.4695518,
+            "right": 0.2831731,
+            "bottom": 0.4935036
+          }
+        },
+        "u9_p058_s015": {
+          "speaker": "Girl",
+          "text": "I like pears.",
+          "rect": {
+            "left": 0.1526041,
+            "top": 0.7462975,
+            "right": 0.2838263,
+            "bottom": 0.7702494
+          }
+        },
+        "u9_p058_s016": {
+          "speaker": "Anne",
+          "text": "I don’t like lemons.",
+          "rect": {
+            "left": 0.6486941,
+            "top": 0.749663,
+            "right": 0.8609086,
+            "bottom": 0.7736148
+          }
+        },
+        "u9_p058_s017": {
+          "speaker": "Anne",
+          "text": "I like pears too.",
+          "rect": {
+            "left": 0.2741678,
+            "top": 0.8746704,
+            "right": 0.4494723,
+            "bottom": 0.8986222
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.71,
+            0.51,
+            0.95
+          ],
+          "anchor": 0.71
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.51,
+            0.71,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.71
+        }
+      ]
+    },
+    "59": {
+      "speakers": {
+        "u9_p059_s010": {
+          "speaker": "Lingling",
+          "text": "I like bananas.",
+          "rect": {
+            "left": 0.2827362,
+            "top": 0.4522645,
+            "right": 0.4476637,
+            "bottom": 0.4762163
+          }
+        },
+        "u9_p059_s014": {
+          "speaker": "Lingling",
+          "text": "Is this a lemon?",
+          "rect": {
+            "left": 0.1561403,
+            "top": 0.6274678,
+            "right": 0.3333888,
+            "bottom": 0.6514196
+          }
+        },
+        "u9_p059_s015": {
+          "speaker": "Lingling",
+          "text": "I don’t like lemons.",
+          "rect": {
+            "left": 0.5457692,
+            "top": 0.632731,
+            "right": 0.7579838,
+            "bottom": 0.6566827
+          }
+        },
+        "u9_p059_s011": {
+          "speaker": "Mingming",
+          "text": "I don’t like bananas.",
+          "rect": {
+            "left": 0.4445011,
+            "top": 0.5107307,
+            "right": 0.6752365,
+            "bottom": 0.5346824
+          }
+        },
+        "u9_p059_s016": {
+          "speaker": "Girl",
+          "text": "Yes, it is.",
+          "rect": {
+            "left": 0.2159452,
+            "top": 0.8536519,
+            "right": 0.3158265,
+            "bottom": 0.8776037
+          }
+        },
+        "u9_p059_s017": {
+          "speaker": "Girl",
+          "text": "I like lemons.",
+          "rect": {
+            "left": 0.6384811,
+            "top": 0.8580546,
+            "right": 0.7851767,
+            "bottom": 0.8820064
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.2,
+            0.44,
+            0.75,
+            0.56
+          ],
+          "anchor": 0.44
+        }
+      ]
+    },
+    "60": {
+      "speakers": {
+        "u9_p060_s006": {
+          "speaker": "Girl",
+          "text": "I like apples.",
+          "rect": {
+            "left": 0.583768,
+            "top": 0.8922798,
+            "right": 0.7262077,
+            "bottom": 0.9162317
+          }
+        }
+      },
+      "regions": []
+    },
+    "61": {
+      "speakers": {
+        "u9_p061_s003": {
+          "speaker": "Dino",
+          "text": "Tim, is this a ball?",
+          "rect": {
+            "left": 0.1125232,
+            "top": 0.1280466,
+            "right": 0.314939,
+            "bottom": 0.1519983
+          }
+        },
+        "u9_p061_s005": {
+          "speaker": "Dino",
+          "text": "Can I have it?",
+          "rect": {
+            "left": 0.5699471,
+            "top": 0.1464033,
+            "right": 0.7305135,
+            "bottom": 0.170355
+          }
+        },
+        "u9_p061_s009": {
+          "speaker": "Dino",
+          "text": "Oh!",
+          "rect": {
+            "left": 0.5081617,
+            "top": 0.3795503,
+            "right": 0.5520863,
+            "bottom": 0.403502
+          }
+        },
+        "u9_p061_s010": {
+          "speaker": "Dino",
+          "text": "I like oranges now.",
+          "rect": {
+            "left": 0.5596785,
+            "top": 0.3795503,
+            "right": 0.7731804,
+            "bottom": 0.403502
+          }
+        },
+        "u9_p061_s004": {
+          "speaker": "Tim",
+          "text": "No, it isn’t.",
+          "rect": {
+            "left": 0.3508608,
+            "top": 0.1366934,
+            "right": 0.4767239,
+            "bottom": 0.1606451
+          }
+        },
+        "u9_p061_s006": {
+          "speaker": "Tim",
+          "text": "It’s an orange.",
+          "rect": {
+            "left": 0.3508608,
+            "top": 0.1658705,
+            "right": 0.515473,
+            "bottom": 0.1898222
+          }
+        },
+        "u9_p061_s007": {
+          "speaker": "Tim",
+          "text": "Yes.",
+          "rect": {
+            "left": 0.6565662,
+            "top": 0.2996421,
+            "right": 0.7021196,
+            "bottom": 0.3235939
+          }
+        },
+        "u9_p061_s008": {
+          "speaker": "Tim",
+          "text": "It’s sweet.",
+          "rect": {
+            "left": 0.7097119,
+            "top": 0.2996421,
+            "right": 0.8227284,
+            "bottom": 0.3235939
+          }
+        },
+        "u9_p061_s011": {
+          "speaker": "Tim",
+          "text": "I don’t like oranges.",
+          "rect": {
+            "left": 0.2594065,
+            "top": 0.3906353,
+            "right": 0.4840474,
+            "bottom": 0.4145871
+          }
+        }
+      },
+      "regions": [],
+      "scene_assignments": {
+        "u9_p061_s005": {
+          "sceneId": "scene-2",
+          "text": "Can I have it?",
+          "rect": {
+            "left": 0.5699471,
+            "top": 0.1464033,
+            "right": 0.7305135,
+            "bottom": 0.170355
+          }
+        },
+        "u9_p061_s007": {
+          "sceneId": "scene-2",
+          "text": "Yes.",
+          "rect": {
+            "left": 0.6565662,
+            "top": 0.2996421,
+            "right": 0.7021196,
+            "bottom": 0.3235939
+          }
+        },
+        "u9_p061_s008": {
+          "sceneId": "scene-2",
+          "text": "It’s sweet.",
+          "rect": {
+            "left": 0.7097119,
+            "top": 0.2996421,
+            "right": 0.8227284,
+            "bottom": 0.3235939
+          }
+        }
+      }
+    },
+    "63": {
+      "speakers": {
+        "u10_p063_s009": {
+          "speaker": "Mingming",
+          "text": "Here is a gift for you.",
+          "rect": {
+            "left": 0.5959278,
+            "top": 0.2265428,
+            "right": 0.833809,
+            "bottom": 0.2504945
+          }
+        },
+        "u10_p063_s010": {
+          "speaker": "Children",
+          "text": "Happy birthday, Anne!",
+          "rect": {
+            "left": 0.1126428,
+            "top": 0.2458157,
+            "right": 0.3727491,
+            "bottom": 0.2697674
+          }
+        },
+        "u10_p063_s011": {
+          "speaker": "Anne",
+          "text": "It’s a storybook.",
+          "rect": {
+            "left": 0.5654977,
+            "top": 0.3741427,
+            "right": 0.7482366,
+            "bottom": 0.3980945
+          }
+        },
+        "u10_p063_s012": {
+          "speaker": "Anne",
+          "text": "I really like it.",
+          "rect": {
+            "left": 0.7558289,
+            "top": 0.3741427,
+            "right": 0.9099065,
+            "bottom": 0.3980945
+          }
+        },
+        "u10_p063_s013": {
+          "speaker": "Anne",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.306034,
+            "top": 0.3791418,
+            "right": 0.4294012,
+            "bottom": 0.4030936
+          }
+        },
+        "u10_p063_s014": {
+          "speaker": "Anne",
+          "text": "Thank you all!",
+          "rect": {
+            "left": 0.5640128,
+            "top": 0.4201469,
+            "right": 0.7212429,
+            "bottom": 0.4440986
+          }
+        },
+        "u10_p063_s015": {
+          "speaker": "Lingling",
+          "text": "Here is a doll for you.",
+          "rect": {
+            "left": 0.1502142,
+            "top": 0.4273324,
+            "right": 0.3919572,
+            "bottom": 0.4512842
+          }
+        },
+        "u10_p063_s020": {
+          "speaker": "Lingling",
+          "text": "Happy birthday, Mum!",
+          "rect": {
+            "left": 0.1305646,
+            "top": 0.7448331,
+            "right": 0.38786,
+            "bottom": 0.768785
+          }
+        },
+        "u10_p063_s016": {
+          "speaker": "Peter",
+          "text": "And a birthday card for you.",
+          "rect": {
+            "left": 0.1602083,
+            "top": 0.5973389,
+            "right": 0.4840473,
+            "bottom": 0.6212907
+          }
+        },
+        "u10_p063_s019": {
+          "speaker": "Peter",
+          "text": "Grandma, here is a birthday card for you.",
+          "rect": {
+            "left": 0.4854353,
+            "top": 0.7164963,
+            "right": 0.7323536,
+            "bottom": 0.7696252
+          }
+        },
+        "u10_p063_s021": {
+          "speaker": "Grandmother",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.7637434,
+            "top": 0.8190969,
+            "right": 0.8871105,
+            "bottom": 0.8430488
+          }
+        },
+        "u10_p063_s022": {
+          "speaker": "Mother",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.3287623,
+            "top": 0.8465405,
+            "right": 0.4521295,
+            "bottom": 0.8704923
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "B-left",
+          "rect": [
+            0.04,
+            0.7,
+            0.48,
+            0.95
+          ],
+          "anchor": 0.7
+        },
+        {
+          "id": "B-right",
+          "rect": [
+            0.48,
+            0.7,
+            0.98,
+            0.95
+          ],
+          "anchor": 0.7
+        }
+      ]
+    },
+    "64": {
+      "speakers": {
+        "u10_p064_s003": {
+          "speaker": "Lingling",
+          "text": "Happy birthday!",
+          "rect": {
+            "left": 0.1992151,
+            "top": 0.1352243,
+            "right": 0.3853693,
+            "bottom": 0.159176
+          }
+        },
+        "u10_p064_s004": {
+          "speaker": "Lingling",
+          "text": "Here is a gift for you.",
+          "rect": {
+            "left": 0.3929615,
+            "top": 0.1352243,
+            "right": 0.6308427,
+            "bottom": 0.159176
+          }
+        },
+        "u10_p064_s005": {
+          "speaker": "Mingming",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.6164271,
+            "top": 0.1788715,
+            "right": 0.7397942,
+            "bottom": 0.2028233
+          }
+        },
+        "u10_p064_s014": {
+          "speaker": "Girl",
+          "text": "Here is a gift for you.",
+          "rect": {
+            "left": 0.1635638,
+            "top": 0.6054968,
+            "right": 0.401009,
+            "bottom": 0.6294486
+          }
+        },
+        "u10_p064_s015": {
+          "speaker": "Girl",
+          "text": "Happy birthday!",
+          "rect": {
+            "left": 0.1635638,
+            "top": 0.6346739,
+            "right": 0.3497181,
+            "bottom": 0.6586257
+          }
+        },
+        "u10_p064_s016": {
+          "speaker": "Boy",
+          "text": "It’s a toy.",
+          "rect": {
+            "left": 0.589545,
+            "top": 0.6369047,
+            "right": 0.6975963,
+            "bottom": 0.6608564
+          }
+        },
+        "u10_p064_s017": {
+          "speaker": "Boy",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.7050571,
+            "top": 0.6369047,
+            "right": 0.8282929,
+            "bottom": 0.6608564
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "C-model",
+          "rect": [
+            0.1,
+            0.12,
+            0.93,
+            0.23
+          ],
+          "anchor": 0.12
+        },
+        {
+          "id": "D-birthday",
+          "rect": [
+            0.1,
+            0.6,
+            0.9,
+            0.7
+          ],
+          "anchor": 0.6
+        }
+      ]
+    },
+    "65": {
+      "speakers": {
+        "u10_p065_s008": {
+          "speaker": "Boy",
+          "text": "Father. This is my father.",
+          "rect": {
+            "left": 0.2868795,
+            "top": 0.5895753,
+            "right": 0.4398539,
+            "bottom": 0.6427041
+          }
+        },
+        "u10_p065_s006": {
+          "speaker": "Girl",
+          "text": "Ten.",
+          "rect": {
+            "left": 0.6217756,
+            "top": 0.5870691,
+            "right": 0.6679069,
+            "bottom": 0.6110208
+          }
+        },
+        "u10_p065_s007": {
+          "speaker": "Girl",
+          "text": "I’m ten.",
+          "rect": {
+            "left": 0.6754991,
+            "top": 0.5870691,
+            "right": 0.7624288,
+            "bottom": 0.6110208
+          }
+        },
+        "u10_p065_s022": {
+          "speaker": "Girl",
+          "text": "Pen. It’s a red pen.",
+          "rect": {
+            "left": 0.2751774,
+            "top": 0.7400898,
+            "right": 0.3868804,
+            "bottom": 0.7932187
+          }
+        },
+        "u10_p065_s021": {
+          "speaker": "Benny",
+          "text": "Cake. Here is a birthday cake for you.",
+          "rect": {
+            "left": 0.6091056,
+            "top": 0.737445,
+            "right": 0.8830301,
+            "bottom": 0.7905739
+          }
+        }
+      },
+      "regions": []
+    },
+    "66": {
+      "speakers": {
+        "u10_p066_s003": {
+          "speaker": "Tim",
+          "text": "Grandpa, birthday noodles for you. Happy birthday!",
+          "rect": {
+            "left": 0.5718089,
+            "top": 0.1054904,
+            "right": 0.8769955,
+            "bottom": 0.1586192
+          }
+        },
+        "u10_p066_s004": {
+          "speaker": "Children",
+          "text": "Happy birthday to you!",
+          "rect": {
+            "left": 0.2081563,
+            "top": 0.1460919,
+            "right": 0.4729387,
+            "bottom": 0.1700436
+          }
+        },
+        "u10_p066_s005": {
+          "speaker": "Mr Green",
+          "text": "Thank you, Tim!",
+          "rect": {
+            "left": 0.7428625,
+            "top": 0.2982076,
+            "right": 0.9202159,
+            "bottom": 0.3221593
+          }
+        },
+        "u10_p066_s006": {
+          "speaker": "Mr Green",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.269696,
+            "top": 0.3109848,
+            "right": 0.3930632,
+            "bottom": 0.3349365
+          }
+        },
+        "u10_p066_s009": {
+          "speaker": "Mr Green",
+          "text": "It’s a little Dino. Thank you! I like it very much.",
+          "rect": {
+            "left": 0.2721968,
+            "top": 0.5380738,
+            "right": 0.5353767,
+            "bottom": 0.5912027
+          }
+        },
+        "u10_p066_s007": {
+          "speaker": "Dino",
+          "text": "Mr Green, here is a gift for you.",
+          "rect": {
+            "left": 0.0997058,
+            "top": 0.3682722,
+            "right": 0.2768754,
+            "bottom": 0.421401
+          }
+        },
+        "u10_p066_s008": {
+          "speaker": "Dino",
+          "text": "Smile!",
+          "rect": {
+            "left": 0.5436486,
+            "top": 0.3704371,
+            "right": 0.6116634,
+            "bottom": 0.3943888
+          }
+        }
+      },
+      "regions": []
+    },
+    "69": {
+      "speakers": {
+        "u10_p069_s002": {
+          "speaker": "Anne",
+          "text": "Happy birthday, Xiaoxiao!",
+          "rect": {
+            "left": 0.2136266,
+            "top": 0.1256784,
+            "right": 0.5138219,
+            "bottom": 0.1496301
+          }
+        },
+        "u10_p069_s004": {
+          "speaker": "Anne",
+          "text": "This is for you.",
+          "rect": {
+            "left": 0.2136266,
+            "top": 0.1548555,
+            "right": 0.3750076,
+            "bottom": 0.1788072
+          }
+        },
+        "u10_p069_s008": {
+          "speaker": "Anne",
+          "text": "Sure.",
+          "rect": {
+            "left": 0.1414266,
+            "top": 0.4709767,
+            "right": 0.198618,
+            "bottom": 0.4949285
+          }
+        },
+        "u10_p069_s003": {
+          "speaker": "Xiaoxiao",
+          "text": "Thank you very much!",
+          "rect": {
+            "left": 0.6728727,
+            "top": 0.1521069,
+            "right": 0.7950577,
+            "bottom": 0.2052357
+          }
+        },
+        "u10_p069_s005": {
+          "speaker": "Xiaoxiao",
+          "text": "Oh, it’s cute!",
+          "rect": {
+            "left": 0.6989972,
+            "top": 0.3619235,
+            "right": 0.8438275,
+            "bottom": 0.3858752
+          }
+        },
+        "u10_p069_s006": {
+          "speaker": "Xiaoxiao",
+          "text": "Can I open it?",
+          "rect": {
+            "left": 0.3520666,
+            "top": 0.3831969,
+            "right": 0.5151289,
+            "bottom": 0.4071486
+          }
+        },
+        "u10_p069_s007": {
+          "speaker": "Xiaoxiao",
+          "text": "I like it!",
+          "rect": {
+            "left": 0.6989972,
+            "top": 0.3911006,
+            "right": 0.7845082,
+            "bottom": 0.4150523
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "gift",
+          "rect": [
+            0.15,
+            0.12,
+            0.9,
+            0.26
+          ],
+          "anchor": 0.12
+        },
+        {
+          "id": "open",
+          "rect": [
+            0.1,
+            0.35,
+            0.63,
+            0.5
+          ],
+          "anchor": 0.35
+        },
+        {
+          "id": "reaction",
+          "rect": [
+            0.66,
+            0.34,
+            0.95,
+            0.44
+          ],
+          "anchor": 0.34
+        }
+      ]
+    },
+    "70": {
+      "speakers": {
+        "u10_p070_s002": {
+          "speaker": "Dino",
+          "text": "Now, I can...",
+          "rect": {
+            "left": 0.2175241,
+            "top": 0.1435203,
+            "right": 0.3689485,
+            "bottom": 0.1676763
+          }
+        }
+      },
+      "regions": []
+    },
+    "72": {
+      "speakers": {
+        "u10_p072_s003": {
+          "speaker": "Dino",
+          "text": "It’s red.",
+          "rect": {
+            "left": 0.3235447,
+            "top": 0.1862921,
+            "right": 0.4105008,
+            "bottom": 0.2102438
+          }
+        },
+        "u10_p072_s014": {
+          "speaker": "Dino",
+          "text": "Excellent",
+          "rect": {
+            "left": 0.1503853,
+            "top": 0.904416,
+            "right": 0.2369526,
+            "bottom": 0.9244686
+          }
+        },
+        "u10_p072_s015": {
+          "speaker": "Dino",
+          "text": "Fine",
+          "rect": {
+            "left": 0.4395584,
+            "top": 0.904416,
+            "right": 0.4896131,
+            "bottom": 0.9240972
+          }
+        },
+        "u10_p072_s016": {
+          "speaker": "Dino",
+          "text": "Try again",
+          "rect": {
+            "left": 0.682211,
+            "top": 0.904416,
+            "right": 0.7734236,
+            "bottom": 0.9240972
+          }
+        },
+        "u10_p072_s005": {
+          "speaker": "Lingling",
+          "text": "This is a dog.",
+          "rect": {
+            "left": 0.3338108,
+            "top": 0.2985367,
+            "right": 0.4813996,
+            "bottom": 0.3224885
+          }
+        },
+        "u10_p072_s006": {
+          "speaker": "Lingling",
+          "text": "That is a duck.",
+          "rect": {
+            "left": 0.3338108,
+            "top": 0.3277137,
+            "right": 0.4951392,
+            "bottom": 0.3516655
+          }
+        },
+        "u10_p072_s008": {
+          "speaker": "Lingling",
+          "text": "I like oranges and lemons.",
+          "rect": {
+            "left": 0.4429156,
+            "top": 0.5173482,
+            "right": 0.7369897,
+            "bottom": 0.5412999
+          }
+        },
+        "u10_p072_s010": {
+          "speaker": "Girl",
+          "text": "Happy birthday to you!",
+          "rect": {
+            "left": 0.2556642,
+            "top": 0.6136981,
+            "right": 0.5204466,
+            "bottom": 0.6376499
+          }
+        },
+        "u10_p072_s011": {
+          "speaker": "Girl",
+          "text": "Thank you!",
+          "rect": {
+            "left": 0.5329378,
+            "top": 0.6821266,
+            "right": 0.6563049,
+            "bottom": 0.7060784
+          }
+        }
+      },
+      "regions": [
+        {
+          "id": "birthday",
+          "rect": [
+            0.2,
+            0.6,
+            0.75,
+            0.73
+          ],
+          "anchor": 0.6
+        }
+      ]
+    }
+  }
+}

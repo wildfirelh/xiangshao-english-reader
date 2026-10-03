@@ -172,7 +172,8 @@ void main() {
       find.byKey(const Key('sentence-highlight')),
     );
     final decoration = highlight.decoration as BoxDecoration;
-    expect((decoration.border! as Border).top.color, Colors.amber);
-    expect((decoration.border! as Border).top.width, 2);
+    expect(decoration.border, isNull);
+    expect(decoration.color, Colors.yellow.withValues(alpha: 0.22));
+    expect(decoration.borderRadius, BorderRadius.circular(4));
   });
 }

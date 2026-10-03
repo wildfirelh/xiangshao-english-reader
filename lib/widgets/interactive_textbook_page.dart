@@ -164,9 +164,8 @@ class _InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
                     child: DecoratedBox(
                       key: const Key('sentence-highlight'),
                       decoration: BoxDecoration(
-                        color: Colors.yellow.withValues(alpha: 0.25),
-                        border: Border.all(color: Colors.amber, width: 2),
-                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.yellow.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),

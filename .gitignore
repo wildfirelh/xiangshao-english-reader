@@ -3,6 +3,7 @@
 *.log
 *.pyc
 .asset-cache/
+.env.volc
 *.swp
 .DS_Store
 .atom/
