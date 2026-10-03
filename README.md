@@ -235,22 +235,33 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 
 上述全架构构建命令还会生成 `app-armeabi-v7a-release.apk`（32 位 ARM）和 `app-x86_64-release.apk`（x86_64）。这些是签名后的 Release 安装包，尚未上传应用商店。现有调试版与发布版签名不同，不能直接覆盖安装；需先备份所需数据再卸载调试版，卸载会清除其阅读进度。
 
-## 版本归档与 GitCode 发布
+## 版本归档与 AtomGit、GitHub 发布
 
 每次 App 或教材资源更新都递增 `pubspec.yaml` 的版本和构建号，更新 [CHANGELOG.md](CHANGELOG.md)，并在 `releases/v{版本}.md` 写中文功能说明。交付 APK 的文件名包含版本、构建号和架构。
 
 ```powershell
 # 构建完成后，核对 APK 内部版本并归档带版本号的安装包及 SHA-256
 py -3.13 tools/package_release.py
-# 源码更新正常提交至私有 main，并推送新版本的 annotated tag 后，发布公开 Release
+# 源码更新正常提交至 AtomGit 私有 main，并推送新版本的 annotated tag 后，发布公开 Release
 py -3.13 tools/publish_public_release.py
+# 同步 GitHub 私有源码仓库和公开下载仓库，发布同版本说明、APK 与 SHA-256
+py -3.13 tools/publish_github_release.py
 ```
 
-归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。公开发布入口为 `tools/publish_public_release.py`，凭据使用本机 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager；原 `tools/publish_gitcode_release.py` 保留为私有仓库发布的兼容入口。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
+归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。AtomGit（原 GitCode）公开发布入口为 `tools/publish_public_release.py`，凭据使用本机 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager；GitHub 同步入口为 `tools/publish_github_release.py`，使用本机已登录的 GitHub 账户和凭据。原 `tools/publish_gitcode_release.py` 保留为私有仓库发布的兼容入口。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
 
-源码、教材源资产和开发说明继续提交至 [GitCode 私有源码仓库](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader)，使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本。用户授权的 [GitCode 公开发布仓库](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader-releases) 只提供中文版本说明、下载文档以及 Release 中的 APK 和 `.apk.sha256` 附件；不上传源码、教材 PDF、教材清单或独立图片、音频等源资产，也不复制私有仓库历史。
+两端仓库按以下范围同步，源码使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本：
 
-公开发布必须核对源码版本标签与对应安装包，在无登录凭据的情况下验证仓库页面和附件下载链接，并重新下载 APK 比较 SHA-256。只有匿名访问和下载校验均通过，才将该版本视为公开发布完成。
+| 用途 | AtomGit / GitCode | GitHub | 可见性与内容 |
+| --- | --- | --- | --- |
+| 源码 | [xiangshao-english-reader](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader) | [wildfirelh/xiangshao-english-reader](https://github.com/wildfirelh/xiangshao-english-reader) | 私有：源码、教材源资产和开发说明 |
+| 下载 | [xiangshao-english-reader-releases](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader-releases) | [wildfirelh/xiangshao-english-reader-releases](https://github.com/wildfirelh/xiangshao-english-reader-releases) | 公开：中文版本说明、下载文档，以及 Release 中的 APK 和 `.apk.sha256` 附件 |
+
+两端公开仓库不上传源码、教材 PDF、教材清单或独立图片、音频等源资产，也不复制私有仓库历史。两边 Release 必须使用同一版本说明、同一安装包和同一 SHA-256 校验文件。
+
+2026-10-03 已为私有源码仓库和公开下载仓库分别启用 AtomGit → GitHub 的原生 Push 镜像，首次同步成功，分支和标签一致。后续提交至 AtomGit 会自动同步 Git 提交、分支和标签；Release 说明及 APK 附件仍由 `tools/publish_github_release.py` 单独同步，脚本也会检查并补齐 Git 同步。
+
+公开发布必须核对两端源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载两端 APK 比较 SHA-256。只有两端匿名访问和下载校验均通过，才将该版本视为同步与公开发布完成。
 
 当前应用版本与说明为 [v1.2.0](releases/v1.2.0.md)，本次公开发布渠道沿用现有 `1.2.0+3` 安装包。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 

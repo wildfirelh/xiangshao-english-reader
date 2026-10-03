@@ -17,6 +17,7 @@ SOURCE_REPOSITORY = "gcw_rw0AAl7X/xiangshao-english-reader"
 PUBLIC_REPOSITORY = "gcw_rw0AAl7X/xiangshao-english-reader-releases"
 PUBLIC_REMOTE = f"https://gitcode.com/{PUBLIC_REPOSITORY}.git"
 PUBLIC_PAGE = f"https://gitcode.com/{PUBLIC_REPOSITORY}"
+GITHUB_PUBLIC_PAGE = "https://github.com/wildfirelh/xiangshao-english-reader-releases"
 CHECKOUT = ROOT / "build/releases/.public-release-repository"
 ALLOWED_PUBLIC_PATH = re.compile(
     r"(?:README\.md|releases/v\d+\.\d+\.\d+\.md|"
@@ -116,13 +117,15 @@ def prepare_public_docs(tag, apk, notes):
         if public_git("show", f"{tag}:{notes_name}").strip() != notes.strip():
             raise RuntimeError("Existing public version tag has different notes; do not replace it")
     download = f"{PUBLIC_PAGE}/releases/download/{quote(tag, safe='')}/{quote(apk.name, safe='')}"
+    github_download = f"{GITHUB_PUBLIC_PAGE}/releases/download/{quote(tag, safe='')}/{quote(apk.name, safe='')}"
     readme = (
         "# 湘少英语三上点读 · 安装包下载\n\n"
         "英语课本点读应用，支持离线音频、单句点读、整页连读、单元目录与阅读进度保存。\n\n"
         f"## 当前版本：{tag}\n\n"
-        f"- [下载 Android ARM64 APK]({download})\n"
+        f"- [从 AtomGit 下载 Android ARM64 APK]({download})\n"
+        f"- [从 GitHub 下载 Android ARM64 APK]({github_download})\n"
         f"- [查看本版功能更新]({notes_name})\n"
-        f"- [查看所有发布版本]({PUBLIC_PAGE}/releases)\n"
+        f"- [AtomGit 发布版本]({PUBLIC_PAGE}/releases) · [GitHub 发布版本]({GITHUB_PUBLIC_PAGE}/releases)\n"
         f"- [SHA-256 校验文件](checksums/{apk.name}.sha256)\n\n"
         "本仓库公开提供安装包、功能更新说明和校验文件。APK 与校验文件位于 Release 附件中。\n"
     )
