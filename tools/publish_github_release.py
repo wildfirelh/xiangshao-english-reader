@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 from urllib.parse import quote, urlsplit
 
 import requests
@@ -222,26 +223,34 @@ class GitHubRelease:
         storage.trust_env = False
         response = None
         try:
-            if anonymous:
-                response = storage.get(browser_url, stream=True, timeout=(20, 90), allow_redirects=False)
-            else:
-                url = f"{API}/repos/{repository}/releases/assets/{int(asset['id'])}"
-                response = self.session.get(url, headers={"Accept": "application/octet-stream"},
-                                            stream=True, timeout=(20, 90), allow_redirects=False)
-            for _ in range(5):
-                if response.status_code not in (301, 302, 303, 307, 308):
-                    break
-                location = response.headers.get("Location", "")
-                parsed = urlsplit(location)
-                if (parsed.scheme != "https" or parsed.username or parsed.password
-                        or not parsed.hostname or parsed.port not in (None, 443)
-                        or not (parsed.hostname == "github.com" or parsed.hostname.endswith(".githubusercontent.com"))):
-                    raise RuntimeError("GitHub attachment redirect is not approved HTTPS storage")
-                response.close()
-                # All signed storage redirects use a separate session without API auth.
-                response = storage.get(location, stream=True, timeout=(20, 90), allow_redirects=False)
-            if response.status_code != 200:
-                raise RuntimeError(f"GitHub attachment verification failed (HTTP {response.status_code})")
+            for attempt in range(3 if anonymous else 1):
+                if anonymous:
+                    response = storage.get(browser_url, stream=True, timeout=(20, 90), allow_redirects=False)
+                else:
+                    url = f"{API}/repos/{repository}/releases/assets/{int(asset['id'])}"
+                    response = self.session.get(url, headers={"Accept": "application/octet-stream"},
+                                                stream=True, timeout=(20, 90), allow_redirects=False)
+                for _ in range(5):
+                    if response.status_code not in (301, 302, 303, 307, 308):
+                        break
+                    location = response.headers.get("Location", "")
+                    parsed = urlsplit(location)
+                    if (parsed.scheme != "https" or parsed.username or parsed.password
+                            or not parsed.hostname or parsed.port not in (None, 443)
+                            or not (parsed.hostname == "github.com" or parsed.hostname.endswith(".githubusercontent.com"))):
+                        raise RuntimeError("GitHub attachment redirect is not approved HTTPS storage")
+                    response.close()
+                    # All signed storage redirects use a separate session without API auth.
+                    response = storage.get(location, stream=True, timeout=(20, 90), allow_redirects=False)
+                if response.status_code == 404 and anonymous and attempt < 2:
+                    # A newly published browser URL may take a few seconds to propagate.
+                    response.close()
+                    response = None
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                if response.status_code != 200:
+                    raise RuntimeError(f"GitHub attachment verification failed (HTTP {response.status_code})")
+                break
             digest, size = hashlib.sha256(), 0
             for chunk in response.iter_content(1024 * 1024):
                 digest.update(chunk)
@@ -286,12 +295,18 @@ class GitHubRelease:
                 assets[file.name] = self.upload(repository, release, file)
             if release["draft"]:
                 self.verify_download(repository, assets[file.name], file, anonymous=False)
-        if release["draft"]:
+        published_draft = release["draft"]
+        if published_draft:
             release = self.request("PATCH", f"{prefix}/{release['id']}", json={
                 "draft": False, "prerelease": False, "make_latest": "true",
             })
         if release.get("draft") is not False or release.get("prerelease") is not False:
             raise RuntimeError("GitHub release did not become a stable published release")
+        if published_draft:
+            # Draft upload URLs can name an untagged release; publication returns canonical URLs.
+            assets = {item["name"]: item for item in self.list_items(f"{prefix}/{release['id']}/assets")}
+            if set(assets) != names:
+                raise RuntimeError("Published GitHub release attachments differ from the verified draft")
         # Use the browser URLs after publication to prove access without credentials.
         for file in files:
             self.verify_download(repository, assets[file.name], file, anonymous=True)

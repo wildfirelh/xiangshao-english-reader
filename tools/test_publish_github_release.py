@@ -151,7 +151,8 @@ class GitHubReleaseTests(unittest.TestCase):
         with patch.object(self.client, "ensure_repository"), \
              patch.object(self.client, "release", return_value=existing), \
              patch.object(self.client, "request", side_effect=[self.release, final] if existing is None else [final]) as request, \
-             patch.object(self.client, "list_items", return_value=list(assets)), \
+             patch.object(self.client, "list_items", side_effect=[
+                 list(assets), [{"name": file.name, "refreshed": True} for file in self.files]]), \
              patch.object(self.client, "upload", side_effect=lambda repo, release, file: {"name": file.name}) as upload, \
              patch.object(self.client, "verify_download") as verify:
             result = self.client.publish(self.repo, "v1.2.0", self.commit, "中文说明", self.files)
@@ -165,6 +166,8 @@ class GitHubReleaseTests(unittest.TestCase):
         self.assertEqual(request.call_args_list[-1].kwargs["json"],
                          {"draft": False, "prerelease": False, "make_latest": "true"})
         self.assertEqual([call.kwargs["anonymous"] for call in verify.call_args_list], [False, False, True, True])
+        self.assertTrue(all(call.args[1].get("refreshed") for call in verify.call_args_list[2:]))
+        self.assertTrue(all(not call.args[1].get("refreshed") for call in verify.call_args_list[:2]))
 
     def test_published_release_reused_without_upload_or_patch(self):
         existing = {**self.release, "draft": False}
@@ -239,6 +242,54 @@ class GitHubReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "unexpected upload"):
                 self.client.upload(self.repo, {"id": 7, "upload_url": "https://other-host/assets"}, self.apk)
         post.assert_not_called()
+
+    def test_anonymous_download_retries_short_publication_404_then_verifies_hash(self):
+        asset = {"id": 99, "size": self.apk.stat().st_size, "state": "uploaded",
+                 "browser_download_url": f"https://github.com/{self.repo}/releases/download/v1.2.0/{self.apk.name}"}
+        missing = [Mock(status_code=404), Mock(status_code=404)]
+        success = Mock(status_code=200)
+        success.iter_content.return_value = [self.apk.read_bytes()]
+        storage = Mock()
+        storage.get.side_effect = [*missing, success]
+        with patch.object(publisher.requests, "Session", return_value=storage), \
+             patch.object(publisher.time, "sleep") as sleep, \
+             patch.object(self.client.session, "get") as authenticated_get:
+            self.client.verify_download(self.repo, asset, self.apk, anonymous=True)
+        self.assertEqual(storage.get.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [2, 4])
+        self.assertTrue(all(response.close.called for response in missing))
+        authenticated_get.assert_not_called()
+
+    def test_anonymous_404_retry_is_bounded_and_other_failures_are_immediate(self):
+        asset = {"id": 99, "size": self.apk.stat().st_size, "state": "uploaded",
+                 "browser_download_url": f"https://github.com/{self.repo}/releases/download/v1.2.0/{self.apk.name}"}
+        for status, attempts, sleeps in ((404, 3, 2), (403, 1, 0), (500, 1, 0)):
+            with self.subTest(status=status):
+                storage = Mock()
+                storage.get.return_value = Mock(status_code=status)
+                with patch.object(publisher.requests, "Session", return_value=storage), \
+                     patch.object(publisher.time, "sleep") as sleep:
+                    with self.assertRaisesRegex(RuntimeError, f"HTTP {status}"):
+                        self.client.verify_download(self.repo, asset, self.apk, anonymous=True)
+                self.assertEqual(storage.get.call_count, attempts)
+                self.assertEqual(sleep.call_count, sleeps)
+
+    def test_metadata_and_hash_mismatch_never_retry(self):
+        asset = {"id": 99, "size": self.apk.stat().st_size, "state": "uploaded",
+                 "browser_download_url": f"https://github.com/{self.repo}/releases/download/v1.2.0/{self.apk.name}"}
+        storage = Mock()
+        storage.get.return_value = Mock(status_code=200)
+        storage.get.return_value.iter_content.return_value = [b"bad hash"]
+        with patch.object(publisher.requests, "Session", return_value=storage), \
+             patch.object(publisher.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "differs from local"):
+                self.client.verify_download(self.repo, asset, self.apk, anonymous=True)
+            self.assertEqual(storage.get.call_count, 1)
+            storage.get.reset_mock()
+            with self.assertRaisesRegex(RuntimeError, "metadata differs"):
+                self.client.verify_download(self.repo, {**asset, "size": 0}, self.apk, anonymous=True)
+            storage.get.assert_not_called()
+            sleep.assert_not_called()
 
 
 if __name__ == "__main__":
