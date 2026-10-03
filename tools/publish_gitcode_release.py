@@ -1,14 +1,12 @@
-"""Publish a pushed version tag, its notes, APK and checksum to GitCode.
+"""Publish a pushed App tag, notes, APK and checksum in the public source repo.
 
 Uses GITCODE_TOKEN or the existing Git credential helper. Credentials and signed
 storage URLs are kept in memory; uploads never receive the GitCode API token.
+The CLI delegates to publish_public_release; GitCodeRelease remains reusable.
 """
-import argparse
 import hashlib
-import json
 import os
 from pathlib import Path
-import re
 import subprocess
 from urllib.parse import quote, urlsplit
 
@@ -169,54 +167,10 @@ class GitCodeRelease:
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--apk", type=Path)
-    parser.add_argument("--notes", type=Path)
-    args = parser.parse_args()
-    version_match = re.search(r"^version:\s*(\d+\.\d+\.\d+)\+(\d+)\s*$",
-                              (ROOT / "pubspec.yaml").read_text(encoding="utf-8"), re.MULTILINE)
-    if not version_match:
-        raise RuntimeError("pubspec.yaml needs a semantic version and build number")
-    version, build = version_match.groups()
-    tag = f"v{version}"
-    apk = args.apk or ROOT / "build/releases" / tag / f"xiangshao-english-reader-{tag}-build{build}-arm64-v8a.apk"
-    notes_path = args.notes or ROOT / "releases" / f"{tag}.md"
-    if not apk.is_file() or not notes_path.is_file():
-        raise RuntimeError("Prepare versioned APK and release notes before publishing")
-    if f"-{tag}-build{build}-" not in apk.name:
-        raise RuntimeError("APK filename does not match pubspec.yaml version")
-    checksum = apk.with_suffix(apk.suffix + ".sha256")
-    digest = hashlib.sha256(apk.read_bytes()).hexdigest()
-    if not checksum.is_file() or checksum.read_text(encoding="utf-8").strip() != f"{digest}  {apk.name}":
-        raise RuntimeError("APK checksum is missing or does not match")
-    remote = git("remote", "get-url", "origin")
-    parsed = urlsplit(remote)
-    if parsed.scheme != "https" or parsed.hostname != "gitcode.com" or parsed.username or parsed.password:
-        raise RuntimeError("origin must be a GitCode HTTPS URL without embedded credentials")
-    repository = parsed.path.strip("/").removesuffix(".git")
-    if repository != "gcw_rw0AAl7X/xiangshao-english-reader":
-        raise RuntimeError("origin is not this project's GitCode repository")
-    if git("status", "--porcelain"):
-        raise RuntimeError("Commit and push project changes before publishing")
-    head = git("rev-parse", "HEAD")
-    refs = dict(line.split()[::-1] for line in git(
-        "ls-remote", "origin", "refs/heads/main", f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"
-    ).splitlines())
-    if refs.get("refs/heads/main") != head or refs.get(f"refs/tags/{tag}^{{}}") != head:
-        raise RuntimeError("Push main and the annotated version tag at HEAD before publishing")
-    title = f"湘少英语三上点读 {tag}"
-    notes = notes_path.read_text(encoding="utf-8")
-    client = GitCodeRelease(repository, credentials(remote), tag)
-    try:
-        result = client.publish(tag, head, title, notes, [apk, checksum])
-    finally:
-        client.session.close()
-    report = {"tag": tag, "commit": head, "releaseStatus": result["release_status"],
-              "url": f"https://gitcode.com/{repository}/releases/{tag}",
-              "apk": apk.name, "sha256": digest, "remoteDownloadsVerified": True}
-    (apk.parent / "gitcode-release.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    # Keep the original command available; all publication uses the single
+    # public source repository and its immutable App version tag.
+    from publish_public_release import main as publish_public
+    publish_public()
 
 
 if __name__ == "__main__":

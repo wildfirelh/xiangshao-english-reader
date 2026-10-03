@@ -1,4 +1,7 @@
+import contextlib
 import hashlib
+import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -21,14 +24,22 @@ class GitHubRepositoryTests(unittest.TestCase):
         self.details = {"full_name": self.repo, "owner": {"login": publisher.DEFAULT_OWNER},
                         "private": False, "fork": False}
 
-    def test_creates_empty_named_repository_with_expected_privacy(self):
-        with patch.object(self.client, "request", side_effect=[None, self.details]) as request:
+    def test_uses_the_existing_public_source_repository_without_creation(self):
+        with patch.object(self.client, "request", return_value=self.details) as request:
             self.client.ensure_repository(self.repo, private=False)
-        payload = request.call_args.kwargs["json"]
-        self.assertEqual(payload["name"], publisher.PUBLIC_NAME)
-        self.assertIs(payload["private"], False)
-        self.assertIs(payload["auto_init"], False)
-        self.assertNotIn("license_template", payload)
+        request.assert_called_once_with("GET", f"/repos/{self.repo}")
+        self.assertEqual(publisher.PUBLIC_NAME, publisher.SOURCE_NAME)
+        self.assertNotIn("-releases", self.repo)
+
+    def test_rejects_old_download_repository_and_private_mode_before_api_access(self):
+        with patch.object(self.client, "request") as request:
+            for repository, private in (
+                (self.repo + "-releases", False), ("someone/other", False), (self.repo, True),
+            ):
+                with self.subTest(repository=repository, private=private):
+                    with self.assertRaisesRegex(RuntimeError, "authorized public"):
+                        self.client.ensure_repository(repository, private=private)
+        request.assert_not_called()
 
     def test_never_changes_privacy_identity_or_forked_repository(self):
         for replacement in ({"private": True}, {"private": "false"}, {"fork": True},
@@ -99,7 +110,7 @@ class GitHubMirrorTests(unittest.TestCase):
 
     def mirror(self):
         with patch.object(publisher, "git_command", side_effect=self.fake_git):
-            return publisher.mirror_repository(Path("mock"), self.repo, "mock-token", public=True)
+            return publisher.mirror_repository(publisher.ROOT, self.repo, "mock-token")
 
     def test_empty_repository_receives_main_and_annotated_tag_without_force(self):
         self.assertEqual(self.mirror(), {"main": self.head, "annotatedVersionTags": 1})
@@ -113,11 +124,18 @@ class GitHubMirrorTests(unittest.TestCase):
                     self.mirror()
                 self.assertFalse(self.pushed)
 
-    def test_public_history_cannot_include_deleted_source(self):
-        self.paths += "\nlib/main.dart"
-        with self.assertRaisesRegex(RuntimeError, "only release documentation"):
-            self.mirror()
-        self.assertFalse(any(args[0] == "push" for args in self.calls))
+    def test_the_same_repository_mirrors_full_source_history(self):
+        self.paths += "\nlib/main.dart\nassets/textbooks/xiangshao_3_1/book.json"
+        self.assertEqual(self.mirror()["main"], self.head)
+        self.assertTrue(self.pushed)
+
+    def test_another_checkout_or_repository_cannot_be_mirrored(self):
+        with patch.object(publisher, "git_command") as run:
+            for cwd, repository in ((Path("mock"), self.repo), (publisher.ROOT, self.repo + "-releases")):
+                with self.subTest(cwd=cwd, repository=repository):
+                    with self.assertRaisesRegex(RuntimeError, "authorized source"):
+                        publisher.mirror_repository(cwd, repository, "mock-token")
+        run.assert_not_called()
 
     def test_git_credentials_are_ephemeral_and_absent_from_arguments(self):
         complete = subprocess.CompletedProcess([], 0, stdout="ok", stderr="")
@@ -163,6 +181,7 @@ class GitHubReleaseTests(unittest.TestCase):
         self.assertEqual(result[1], 2)
         self.assertEqual(upload.call_count, 2)
         self.assertTrue(request.call_args_list[0].kwargs["json"]["draft"])
+        self.assertEqual(request.call_args_list[0].kwargs["json"]["target_commitish"], self.commit)
         self.assertEqual(request.call_args_list[-1].kwargs["json"],
                          {"draft": False, "prerelease": False, "make_latest": "true"})
         self.assertEqual([call.kwargs["anonymous"] for call in verify.call_args_list], [False, False, True, True])
@@ -290,6 +309,46 @@ class GitHubReleaseTests(unittest.TestCase):
                 self.client.verify_download(self.repo, {**asset, "size": 0}, self.apk, anonymous=True)
             storage.get.assert_not_called()
             sleep.assert_not_called()
+
+
+class GitHubMainTests(unittest.TestCase):
+    def test_one_source_repo_is_mirrored_and_release_targets_its_app_tag(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            notes = "原版中文版本说明"
+            (root / "releases").mkdir()
+            (root / "releases/v1.2.0.md").write_text(notes, encoding="utf-8")
+            apk = root / "build/releases/v1.2.0/xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk"
+            apk.parent.mkdir(parents=True)
+            app_commit, main_commit = "a" * 40, "b" * 40
+            repository = "wildfirelh/xiangshao-english-reader"
+            client = Mock()
+            client.owner.return_value = "wildfirelh"
+            client.publish.return_value = ({"id": 7}, 2)
+            with patch.object(publisher, "ROOT", root), \
+                 patch.object(sys, "argv", ["publish_github_release.py"]), \
+                 patch.object(publisher, "read_version", return_value=("1.2.0", 3)), \
+                 patch.object(publisher, "package_release", return_value={"filename": apk.name, "sha256": "test-digest"}), \
+                 patch.object(publisher, "credentials", return_value="gh-test-token"), \
+                 patch.object(publisher, "atomgit_credentials", return_value="atomgit-test-token"), \
+                 patch.object(publisher, "source_snapshot", return_value=app_commit), \
+                 patch.object(publisher, "git", side_effect=lambda *args: notes if args[0] == "show" else "mock-origin"), \
+                 patch.object(publisher, "mirror_repository", return_value={"main": main_commit, "annotatedVersionTags": 1}) as mirror, \
+                 patch.object(publisher, "verify_anonymous_pages") as verify, \
+                 patch.object(publisher, "GitHubRelease", return_value=client), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                publisher.main()
+            mirror.assert_called_once_with(root, repository, "gh-test-token")
+            self.assertEqual(client.publish.call_args.args[:3], (repository, "v1.2.0", app_commit))
+            self.assertTrue(all(call.args == (repository,) and call.kwargs == {"private": False}
+                                for call in client.ensure_repository.call_args_list))
+            verify.assert_called_once_with(repository, "v1.2.0")
+            report = json.loads((apk.parent / "github-release.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["sourceCommit"], app_commit)
+            self.assertEqual(report["sourceMirror"]["main"], main_commit)
+            self.assertTrue(report["sourcePublic"])
+            self.assertNotIn("publicMirror", report)
+            self.assertNotIn("sourceRemainsPrivate", report)
 
 
 if __name__ == "__main__":

@@ -1,35 +1,25 @@
-"""Publish APKs and notes to the public download repository; keep source private."""
+"""Publish the versioned APK alongside source in the public AtomGit repository.
+
+Repository visibility is changed deliberately outside this publishing command.
+The command requires the authorized repository to already be public and keeps
+App tags, historical notes and signed APK bytes unchanged.
+"""
 import argparse
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
-from urllib.parse import quote
 
 import requests
 
 from package_release import DEFAULT_AAPT, package_release, read_version
-from publish_gitcode_release import API, GitCodeRelease, ROOT, credentials, git
+from publish_gitcode_release import GitCodeRelease, ROOT, credentials, git
 
 
 SOURCE_REPOSITORY = "gcw_rw0AAl7X/xiangshao-english-reader"
-PUBLIC_REPOSITORY = "gcw_rw0AAl7X/xiangshao-english-reader-releases"
+PUBLIC_REPOSITORY = SOURCE_REPOSITORY
 PUBLIC_REMOTE = f"https://gitcode.com/{PUBLIC_REPOSITORY}.git"
 PUBLIC_PAGE = f"https://gitcode.com/{PUBLIC_REPOSITORY}"
-GITHUB_PUBLIC_PAGE = "https://github.com/wildfirelh/xiangshao-english-reader-releases"
-CHECKOUT = ROOT / "build/releases/.public-release-repository"
-ALLOWED_PUBLIC_PATH = re.compile(
-    r"(?:README\.md|releases/v\d+\.\d+\.\d+\.md|"
-    r"checksums/xiangshao-english-reader-v\d+\.\d+\.\d+-build\d+-"
-    r"(?:arm64-v8a|armeabi-v7a|x86_64)\.apk\.sha256)"
-)
-
-
-def validate_public_paths(paths):
-    rejected = [path for path in paths if path and not ALLOWED_PUBLIC_PATH.fullmatch(path)]
-    if rejected:
-        raise RuntimeError("Public repository must contain only release documentation and checksums")
 
 
 def public_git(*args, check=True, anonymous=False):
@@ -40,110 +30,48 @@ def public_git(*args, check=True, anonymous=False):
                 environment.pop(key, None)
         environment.update(GIT_ASKPASS="", SSH_ASKPASS="", GIT_CONFIG_GLOBAL=os.devnull,
                            GIT_CONFIG_SYSTEM=os.devnull, GIT_CONFIG_NOSYSTEM="1")
-    result = subprocess.run(["git", *args], cwd=CHECKOUT, capture_output=True,
-                            text=True, encoding="utf-8", errors="replace",
-                            env=environment)
+    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace", env=environment)
     if check and result.returncode:
         raise RuntimeError(f"Public repository Git operation failed: {args[0]}")
     return result.stdout.strip() if check else result
 
 
 def ensure_public_repository(client):
-    repo = client.request("GET", "", missing_ok=True)
-    if repo is None:
-        try:
-            with client.session.post(f"{API}/user/repos", json={
-                "name": "xiangshao-english-reader-releases", "path": "xiangshao-english-reader-releases",
-                "description": "湘少英语三上点读：公开 APK、版本说明与 SHA-256 校验。",
-                "private": False, "auto_init": False, "default_branch": "main",
-            }, timeout=(20, 60), allow_redirects=False) as response:
-                if not response.ok:
-                    raise RuntimeError(f"Create public repository failed (HTTP {response.status_code})")
-        except requests.RequestException:
-            raise RuntimeError("Create public repository network request failed") from None
-        repo = client.request("GET", "")
+    repo = client.request("GET", "")
     if repo.get("full_name") != PUBLIC_REPOSITORY or repo.get("private") is not False:
-        raise RuntimeError("Expected the authorized public APK-only repository")
+        raise RuntimeError("Expected the authorized public source-and-release repository")
+    return repo
 
 
 def source_snapshot(tag, token):
-    if git("remote", "get-url", "origin") != f"https://gitcode.com/{SOURCE_REPOSITORY}.git":
-        raise RuntimeError("Source origin does not match the private source repository")
+    if git("remote", "get-url", "origin") != PUBLIC_REMOTE:
+        raise RuntimeError("Source origin does not match the authorized public repository")
     source = GitCodeRelease(SOURCE_REPOSITORY, token, tag)
     try:
-        if source.request("GET", "").get("private") is not True:
-            raise RuntimeError("Source repository must remain private")
+        ensure_public_repository(source)
     finally:
         source.session.close()
     if git("status", "--porcelain"):
         raise RuntimeError("Commit and push publishing changes before publishing")
     head = git("rev-parse", "HEAD")
+    if head != git("rev-parse", "refs/heads/main"):
+        raise RuntimeError("Check out main before publishing")
+    if git("cat-file", "-t", f"refs/tags/{tag}") != "tag":
+        raise RuntimeError("App version tag must remain annotated")
+    tag_object = git("rev-parse", f"refs/tags/{tag}")
     tagged_commit = git("rev-parse", f"{tag}^{{commit}}")
     refs = dict(line.split()[::-1] for line in git(
-        "ls-remote", "origin", "refs/heads/main", f"refs/tags/{tag}^{{}}"
+        "ls-remote", "origin", "refs/heads/main", f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"
     ).splitlines())
-    if refs.get("refs/heads/main") != head or refs.get(f"refs/tags/{tag}^{{}}") != tagged_commit:
-        raise RuntimeError("Push source main and the annotated App version tag before publishing")
-    # Publishing/documentation fixes may follow the existing App tag. The App
-    # itself and its resources must still be exactly the version that was tagged.
+    if (refs.get("refs/heads/main") != head or refs.get(f"refs/tags/{tag}") != tag_object
+            or refs.get(f"refs/tags/{tag}^{{}}") != tagged_commit):
+        raise RuntimeError("Push source main and the unchanged annotated App version tag before publishing")
+    # Publishing/documentation changes may follow the existing App tag. App and
+    # textbook content must still match the tagged version that produced the APK.
     if git("diff", "--name-only", tagged_commit, head, "--", "pubspec.yaml", "lib", "android", "assets"):
         raise RuntimeError("App or textbook changed after its version tag; build a new version")
     return tagged_commit
-
-
-def prepare_public_docs(tag, apk, notes):
-    if not (CHECKOUT / ".git").is_dir():
-        CHECKOUT.parent.mkdir(parents=True, exist_ok=True)
-        result = subprocess.run(["git", "clone", PUBLIC_REMOTE, str(CHECKOUT)],
-                                capture_output=True, text=True,
-                                env=dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never"))
-        if result.returncode:
-            raise RuntimeError("Clone public release repository failed")
-    if public_git("remote", "get-url", "origin") != PUBLIC_REMOTE:
-        raise RuntimeError("Public checkout points to another repository")
-    validate_public_paths(public_git("ls-files").splitlines())
-    validate_public_paths(public_git("ls-files", "--others", "--exclude-standard").splitlines())
-    if public_git("status", "--porcelain"):
-        raise RuntimeError("Public documentation checkout has unfinished changes; review before retrying")
-    public_git("fetch", "origin")
-    if public_git("rev-parse", "--verify", "HEAD", check=False).returncode == 0:
-        public_git("pull", "--ff-only", "origin", "main")
-    else:
-        public_git("symbolic-ref", "HEAD", "refs/heads/main")
-    public_git("config", "user.name", git("config", "user.name"))
-    public_git("config", "user.email", git("config", "user.email"))
-    notes_name = f"releases/{tag}.md"
-    if public_git("tag", "--list", tag):
-        if public_git("show", f"{tag}:{notes_name}").strip() != notes.strip():
-            raise RuntimeError("Existing public version tag has different notes; do not replace it")
-    download = f"{PUBLIC_PAGE}/releases/download/{quote(tag, safe='')}/{quote(apk.name, safe='')}"
-    github_download = f"{GITHUB_PUBLIC_PAGE}/releases/download/{quote(tag, safe='')}/{quote(apk.name, safe='')}"
-    readme = (
-        "# 湘少英语三上点读 · 安装包下载\n\n"
-        "英语课本点读应用，支持离线音频、单句点读、整页连读、单元目录与阅读进度保存。\n\n"
-        f"## 当前版本：{tag}\n\n"
-        f"- [从 AtomGit 下载 Android ARM64 APK]({download})\n"
-        f"- [从 GitHub 下载 Android ARM64 APK]({github_download})\n"
-        f"- [查看本版功能更新]({notes_name})\n"
-        f"- [AtomGit 发布版本]({PUBLIC_PAGE}/releases) · [GitHub 发布版本]({GITHUB_PUBLIC_PAGE}/releases)\n"
-        f"- [SHA-256 校验文件](checksums/{apk.name}.sha256)\n\n"
-        "本仓库公开提供安装包、功能更新说明和校验文件。APK 与校验文件位于 Release 附件中。\n"
-    )
-    files = {"README.md": readme, notes_name: notes,
-             f"checksums/{apk.name}.sha256": apk.with_suffix(".apk.sha256").read_text(encoding="utf-8")}
-    validate_public_paths(files)
-    for name, text in files.items():
-        path = CHECKOUT / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text.rstrip() + "\n", encoding="utf-8", newline="\n")
-    public_git("add", "--", *files.keys())
-    validate_public_paths(public_git("ls-files").splitlines())
-    if public_git("diff", "--cached", "--name-only"):
-        public_git("commit", "-m", f"Publish {tag} download information and release notes")
-    if not public_git("tag", "--list", tag):
-        public_git("tag", "-a", tag, "-F", notes_name)
-    public_git("push", "--atomic", "origin", "main", tag)
-    return public_git("rev-parse", f"{tag}^{{commit}}")
 
 
 def verify_anonymous_pages():
@@ -156,12 +84,10 @@ def verify_anonymous_pages():
                         raise RuntimeError(f"Anonymous public page failed (HTTP {response.status_code})")
             except requests.RequestException:
                 raise RuntimeError("Anonymous page verification network request failed") from None
-    # Verify unauthenticated Git access too; an HTML shell returning 200 alone
-    # cannot prove that its repository contents are publicly accessible.
     result = public_git("-c", "credential.helper=", "-c", "core.askPass=", "-c", "http.extraHeader=",
                         "ls-remote", "--exit-code", PUBLIC_REMOTE, "refs/heads/main", check=False, anonymous=True)
     if result.returncode or not result.stdout.strip():
-        raise RuntimeError("Public documentation cannot be accessed without Git credentials")
+        raise RuntimeError("Public source cannot be accessed without Git credentials")
 
 
 def main():
@@ -178,20 +104,19 @@ def main():
     source_commit = source_snapshot(tag, token)
     if git("show", f"{source_commit}:releases/{tag}.md").strip() != notes.strip():
         raise RuntimeError("Release notes changed after their App version tag")
+    verify_anonymous_pages()
     client = GitCodeRelease(PUBLIC_REPOSITORY, token, tag)
     try:
         ensure_public_repository(client)
-        public_commit = prepare_public_docs(tag, apk, notes)
-        verify_anonymous_pages()
-        release = client.publish(tag, public_commit, f"湘少英语三上点读 {tag}", notes,
+        release = client.publish(tag, source_commit, f"湘少英语三上点读 {tag}", notes,
                                  [apk, apk.with_suffix(".apk.sha256")], expected_private=False)
     finally:
         client.session.close()
-    report = {"tag": tag, "sourceCommit": source_commit, "sourceRemainsPrivate": True,
-              "publicCommit": public_commit, "repository": PUBLIC_PAGE,
-              "releasePage": f"{PUBLIC_PAGE}/releases", "releaseStatus": release["release_status"],
-              "apk": apk.name, "sha256": metadata["sha256"],
-              "anonymousPagesVerified": True, "anonymousDownloadsVerified": True}
+    report = {"tag": tag, "sourceCommit": source_commit, "sourcePublic": True,
+              "repository": PUBLIC_PAGE, "releasePage": f"{PUBLIC_PAGE}/releases",
+              "releaseStatus": release["release_status"], "apk": apk.name,
+              "sha256": metadata["sha256"], "anonymousPagesVerified": True,
+              "anonymousDownloadsVerified": True}
     (apk.parent / "public-gitcode-release.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))

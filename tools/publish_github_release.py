@@ -1,4 +1,4 @@
-"""Mirror the private source and public download docs, then publish to GitHub.
+"""Mirror the public source repository and publish its APK release on GitHub.
 
 Credentials stay in memory. Existing tags, notes and assets are never replaced.
 GitHub REST references: https://docs.github.com/en/rest/releases/releases and
@@ -19,8 +19,7 @@ import requests
 
 from package_release import DEFAULT_AAPT, package_release, read_version, sha256_file
 from publish_public_release import (
-    CHECKOUT, PUBLIC_REMOTE, ROOT, credentials as atomgit_credentials,
-    git, source_snapshot, validate_public_paths,
+    ROOT, credentials as atomgit_credentials, git, source_snapshot,
 )
 
 
@@ -28,7 +27,7 @@ API = "https://api.github.com"
 GH = Path(r"C:\Program Files\GitHub CLI\gh.exe")
 DEFAULT_OWNER = "wildfirelh"
 SOURCE_NAME = "xiangshao-english-reader"
-PUBLIC_NAME = "xiangshao-english-reader-releases"
+PUBLIC_NAME = SOURCE_NAME
 VERSION_TAG = re.compile(r"v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 
 
@@ -64,7 +63,9 @@ def git_command(cwd, *args, token=None, check=True, anonymous=False):
     return result.stdout.strip() if check else result
 
 
-def mirror_repository(cwd, repository, token, *, public=False):
+def mirror_repository(cwd, repository, token):
+    if repository != f"{DEFAULT_OWNER}/{SOURCE_NAME}" or Path(cwd).resolve() != ROOT.resolve():
+        raise RuntimeError("Only the authorized source repository may be mirrored")
     run = lambda *args, **kwargs: git_command(cwd, *args, **kwargs)
     if run("status", "--porcelain"):
         raise RuntimeError("Commit local changes before mirroring to GitHub")
@@ -80,11 +81,6 @@ def mirror_repository(cwd, repository, token, *, public=False):
             tags[ref] = object_id
     if not tags:
         raise RuntimeError("An annotated App version tag is required")
-    if public:
-        # Inspect all reachable historical paths so removing leaked source later cannot hide it.
-        validate_public_paths(run("log", "--all", "--format=", "--name-only").splitlines())
-        validate_public_paths(run("ls-files").splitlines())
-        validate_public_paths(run("ls-files", "--others", "--exclude-standard").splitlines())
     remote = f"https://github.com/{repository}.git"
     existing = run("remote", "get-url", "github", check=False)
     if existing.returncode:
@@ -113,23 +109,6 @@ def mirror_repository(cwd, repository, token, *, public=False):
     if after.get("refs/heads/main") != head or any(after.get(ref) != value for ref, value in tags.items()):
         raise RuntimeError("GitHub mirror refs did not match the local repository")
     return {"main": head, "annotatedVersionTags": len(tags)}
-
-
-def public_snapshot(tag, apk, notes):
-    if not (CHECKOUT / ".git").is_dir():
-        CHECKOUT.parent.mkdir(parents=True, exist_ok=True)
-        git_command(ROOT, "clone", PUBLIC_REMOTE, str(CHECKOUT))
-    if git_command(CHECKOUT, "remote", "get-url", "origin") != PUBLIC_REMOTE:
-        raise RuntimeError("Public checkout must retain its original AtomGit remote")
-    commit = git_command(CHECKOUT, "rev-parse", f"{tag}^{{commit}}")
-    if git_command(CHECKOUT, "cat-file", "-t", f"refs/tags/{tag}") != "tag":
-        raise RuntimeError("Public version tag must remain annotated")
-    if git_command(CHECKOUT, "show", f"{tag}:releases/{tag}.md").strip() != notes.strip():
-        raise RuntimeError("Existing public version tag has different notes; do not replace it")
-    checksum = apk.with_suffix(".apk.sha256").read_text(encoding="utf-8").strip()
-    if git_command(CHECKOUT, "show", f"{tag}:checksums/{apk.name}.sha256").strip() != checksum:
-        raise RuntimeError("Existing public version tag has a different APK checksum")
-    return commit
 
 
 class GitHubRelease:
@@ -161,13 +140,10 @@ class GitHubRelease:
         return login
 
     def ensure_repository(self, repository, *, private):
+        if repository != f"{DEFAULT_OWNER}/{SOURCE_NAME}" or private is not False:
+            raise RuntimeError("Only the authorized public source-and-release repository is allowed")
         path = f"/repos/{repository}"
-        repo = self.request("GET", path, missing_ok=True)
-        if repo is None:
-            repo = self.request("POST", "/user/repos", json={
-                "name": repository.split("/")[1], "private": private, "auto_init": False,
-                "description": "湘少英语三上点读：私有源码。" if private else "湘少英语三上点读：APK、中文版本说明与 SHA-256 校验。",
-            })
+        repo = self.request("GET", path)
         if (repo.get("full_name", "").lower() != repository.lower()
                 or repo.get("owner", {}).get("login", "").lower() != repository.split("/")[0].lower()
                 or repo.get("private") is not private or repo.get("fork") is not False):
@@ -324,11 +300,11 @@ def verify_anonymous_pages(repository, tag):
                         raise RuntimeError(f"GitHub anonymous page failed (HTTP {response.status_code})")
         except requests.RequestException:
             raise RuntimeError("GitHub anonymous page verification network request failed") from None
-    result = git_command(CHECKOUT, "-c", "credential.helper=", "-c", "core.askPass=",
+    result = git_command(ROOT, "-c", "credential.helper=", "-c", "core.askPass=",
                          "-c", "http.extraHeader=", "ls-remote", "--exit-code",
                          page + ".git", "refs/heads/main", anonymous=True, check=False)
     if result.returncode or not result.stdout.strip():
-        raise RuntimeError("GitHub public docs cannot be accessed without Git credentials")
+        raise RuntimeError("GitHub public source cannot be accessed without Git credentials")
 
 
 def main():
@@ -344,28 +320,24 @@ def main():
     source_commit = source_snapshot(tag, atomgit_credentials(git("remote", "get-url", "origin")))
     if git("show", f"{source_commit}:releases/{tag}.md").strip() != notes.strip():
         raise RuntimeError("Release notes changed after their App version tag")
-    public_commit = public_snapshot(tag, apk, notes)
     token = credentials()
     client = GitHubRelease(token)
     try:
         owner = client.owner(os.environ.get("GH_OWNER", DEFAULT_OWNER))
-        source_repository, public_repository = f"{owner}/{SOURCE_NAME}", f"{owner}/{PUBLIC_NAME}"
-        # Verify both privacy boundaries before pushing either Git history.
-        client.ensure_repository(source_repository, private=True)
-        client.ensure_repository(public_repository, private=False)
+        source_repository = f"{owner}/{SOURCE_NAME}"
+        client.ensure_repository(source_repository, private=False)
         source_mirror = mirror_repository(ROOT, source_repository, token)
-        public_mirror = mirror_repository(CHECKOUT, public_repository, token, public=True)
-        release, asset_count = client.publish(public_repository, tag, public_commit, notes,
+        release, asset_count = client.publish(source_repository, tag, source_commit, notes,
                                               [apk, apk.with_suffix(".apk.sha256")])
-        verify_anonymous_pages(public_repository, tag)
-        client.ensure_repository(source_repository, private=True)
+        verify_anonymous_pages(source_repository, tag)
+        client.ensure_repository(source_repository, private=False)
     finally:
         client.session.close()
     report = {
-        "tag": tag, "sourceCommit": source_commit, "sourceRemainsPrivate": True,
+        "tag": tag, "sourceCommit": source_commit, "sourcePublic": True,
         "sourceRepository": f"https://github.com/{source_repository}", "sourceMirror": source_mirror,
-        "publicRepository": f"https://github.com/{public_repository}", "publicCommit": public_commit,
-        "publicMirror": public_mirror, "releasePage": f"https://github.com/{public_repository}/releases/tag/{tag}",
+        "repository": f"https://github.com/{source_repository}",
+        "releasePage": f"https://github.com/{source_repository}/releases/tag/{tag}",
         "releaseId": release["id"], "releaseStatus": "published", "assetCount": asset_count,
         "apk": apk.name, "sha256": metadata["sha256"],
         "anonymousPagesVerified": True, "anonymousDownloadsVerified": True,

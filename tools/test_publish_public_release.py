@@ -1,6 +1,10 @@
+import contextlib
+import io
+import json
 import subprocess
 import sys
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
@@ -41,25 +45,10 @@ class FakeAnonymousSession:
 
 
 class PublicReleaseScopeTests(unittest.TestCase):
-    def test_only_public_release_documents_and_checksums_are_allowed(self):
-        publisher.validate_public_paths([
-            "README.md", "releases/v1.2.0.md",
-            "checksums/xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk.sha256",
-            "checksums/xiangshao-english-reader-v1.2.0-build3-armeabi-v7a.apk.sha256",
-            "checksums/xiangshao-english-reader-v1.2.0-build3-x86_64.apk.sha256",
-        ])
-        forbidden = [
-            "lib/main.dart", "assets/textbooks/book.json", "assets/images/page.webp",
-            "assets/audios/one.mp3", "textbooks/book.pdf", "book.PDF",
-            ".env", ".env.volc", ".env.volc.example", "android/key.properties",
-            "android/app/build.gradle.kts", "tools/publish_public_release.py",
-            "pubspec.yaml", "README.md/../lib/main.dart", "../README.md",
-            "releases/v1.2.0.md.bak", "checksums/source.zip.sha256",
-            "xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk",
-        ]
-        for path in forbidden:
-            with self.subTest(path=path), self.assertRaises(RuntimeError):
-                publisher.validate_public_paths(["README.md", path])
+    def test_source_and_release_share_the_authorized_repository(self):
+        self.assertEqual(publisher.PUBLIC_REPOSITORY, publisher.SOURCE_REPOSITORY)
+        self.assertEqual(publisher.PUBLIC_REPOSITORY, "gcw_rw0AAl7X/xiangshao-english-reader")
+        self.assertNotIn("-releases", publisher.PUBLIC_REMOTE)
 
     def test_existing_repository_must_be_the_authorized_public_repository(self):
         client = Mock()
@@ -67,8 +56,8 @@ class PublicReleaseScopeTests(unittest.TestCase):
         publisher.ensure_public_repository(client)
         client.session.post.assert_not_called()
         for repo in (
-            {"full_name": publisher.SOURCE_REPOSITORY, "private": False},
-            {"full_name": "another-owner/xiangshao-english-reader-releases", "private": False},
+            {"full_name": "gcw_rw0AAl7X/xiangshao-english-reader-releases", "private": False},
+            {"full_name": "another-owner/xiangshao-english-reader", "private": False},
             {"full_name": publisher.PUBLIC_REPOSITORY, "private": True},
             {"full_name": publisher.PUBLIC_REPOSITORY, "private": None},
             {"full_name": publisher.PUBLIC_REPOSITORY, "private": "false"},
@@ -79,27 +68,23 @@ class PublicReleaseScopeTests(unittest.TestCase):
                     publisher.ensure_public_repository(client)
         client.session.post.assert_not_called()
 
-    def test_creation_requests_only_the_named_public_release_repository(self):
+    def test_missing_repository_is_not_replaced_with_a_new_download_repository(self):
         client = Mock()
-        client.request.side_effect = [None, {"full_name": publisher.PUBLIC_REPOSITORY, "private": False}]
-        client.session.post.return_value = FakeResponse()
-        publisher.ensure_public_repository(client)
-        args, kwargs = client.session.post.call_args
-        self.assertEqual(args, (f"{publisher.API}/user/repos",))
-        self.assertEqual(kwargs["json"]["name"], "xiangshao-english-reader-releases")
-        self.assertEqual(kwargs["json"]["path"], "xiangshao-english-reader-releases")
-        self.assertIs(kwargs["json"]["private"], False)
-        self.assertIs(kwargs["json"]["auto_init"], False)
-        self.assertFalse(kwargs["allow_redirects"])
+        client.request.side_effect = RuntimeError("GitCode API request failed (HTTP 404)")
+        with self.assertRaisesRegex(RuntimeError, "404"):
+            publisher.ensure_public_repository(client)
+        client.session.post.assert_not_called()
+        client.request.assert_called_once_with("GET", "")
 
 
 class SourceSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.head = "b" * 40
         self.app_commit = "a" * 40
+        self.tag_object = "c" * 40
         self.tag = "v1.2.0"
         self.source = Mock()
-        self.source.request.return_value = {"private": True}
+        self.source.request.return_value = {"full_name": publisher.SOURCE_REPOSITORY, "private": False}
         self.changed = []
         self.origin = f"https://gitcode.com/{publisher.SOURCE_REPOSITORY}.git"
 
@@ -110,10 +95,17 @@ class SourceSnapshotTests(unittest.TestCase):
             return ""
         if args == ("rev-parse", "HEAD"):
             return self.head
+        if args == ("rev-parse", "refs/heads/main"):
+            return self.head
+        if args == ("cat-file", "-t", f"refs/tags/{self.tag}"):
+            return "tag"
+        if args == ("rev-parse", f"refs/tags/{self.tag}"):
+            return self.tag_object
         if args == ("rev-parse", f"{self.tag}^{{commit}}"):
             return self.app_commit
-        if args == ("ls-remote", "origin", "refs/heads/main", f"refs/tags/{self.tag}^{{}}"):
-            return f"{self.head}\trefs/heads/main\n{self.app_commit}\trefs/tags/{self.tag}^{{}}"
+        if args == ("ls-remote", "origin", "refs/heads/main", f"refs/tags/{self.tag}", f"refs/tags/{self.tag}^{{}}"):
+            return (f"{self.head}\trefs/heads/main\n{self.tag_object}\trefs/tags/{self.tag}\n"
+                    f"{self.app_commit}\trefs/tags/{self.tag}^{{}}")
         if args[:2] == ("diff", "--name-only"):
             self.assertEqual(args, (
                 "diff", "--name-only", self.app_commit, self.head, "--",
@@ -149,21 +141,35 @@ class SourceSnapshotTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "changed after"):
                     self.snapshot()
 
-    def test_source_must_remain_private(self):
-        for value in (False, None, "true", 1):
+    def test_source_must_already_be_public(self):
+        for value in (True, None, "false", 0):
             with self.subTest(privacy=value):
-                self.source.request.return_value = {"private": value}
-                with self.assertRaisesRegex(RuntimeError, "remain private"):
+                self.source.request.return_value = {"full_name": publisher.SOURCE_REPOSITORY, "private": value}
+                with self.assertRaisesRegex(RuntimeError, "authorized public"):
                     self.snapshot()
                 self.source.session.close.assert_called()
 
     def test_different_source_origin_is_rejected_before_api_access(self):
-        self.origin = publisher.PUBLIC_REMOTE
+        self.origin = "https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader-releases.git"
         with patch.object(publisher, "git", side_effect=self.fake_git), \
              patch.object(publisher, "GitCodeRelease") as factory:
-            with self.assertRaisesRegex(RuntimeError, "private source repository"):
+            with self.assertRaisesRegex(RuntimeError, "authorized public repository"):
                 publisher.source_snapshot(self.tag, "mock-token")
         factory.assert_not_called()
+
+    def test_lightweight_or_moved_remote_app_tag_is_rejected(self):
+        original = self.fake_git
+        for mode in ("lightweight", "moved"):
+            def altered(*args):
+                if mode == "lightweight" and args[:2] == ("cat-file", "-t"):
+                    return "commit"
+                if mode == "moved" and args[0] == "ls-remote":
+                    return original(*args).replace(self.tag_object, "d" * 40)
+                return original(*args)
+            with self.subTest(mode=mode), patch.object(publisher, "git", side_effect=altered), \
+                 patch.object(publisher, "GitCodeRelease", return_value=self.source):
+                with self.assertRaisesRegex(RuntimeError, "annotated App version tag|must remain annotated"):
+                    publisher.source_snapshot(self.tag, "mock-token")
 
 
 class AnonymousPublicAccessTests(unittest.TestCase):
@@ -232,6 +238,40 @@ class AnonymousPublicAccessTests(unittest.TestCase):
         self.assertNotIn("GIT_CONFIG_COUNT", environment)
         self.assertFalse(any(key.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")) for key in environment))
         self.assertEqual(fake_environment["GIT_ASKPASS"], "mock-git-askpass")
+
+
+class PublicMainTests(unittest.TestCase):
+    def test_release_uses_app_tag_commit_in_the_source_repository(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            notes = "原版中文版本说明"
+            (root / "releases").mkdir()
+            (root / "releases/v1.2.0.md").write_text(notes, encoding="utf-8")
+            apk = root / "build/releases/v1.2.0/xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk"
+            apk.parent.mkdir(parents=True)
+            app_commit = "a" * 40
+            client = Mock()
+            client.publish.return_value = {"release_status": "latest"}
+            with patch.object(publisher, "ROOT", root), \
+                 patch.object(sys, "argv", ["publish_public_release.py"]), \
+                 patch.object(publisher, "read_version", return_value=("1.2.0", 3)), \
+                 patch.object(publisher, "package_release", return_value={"filename": apk.name, "sha256": "test-digest"}), \
+                 patch.object(publisher, "credentials", return_value="test-token"), \
+                 patch.object(publisher, "source_snapshot", return_value=app_commit), \
+                 patch.object(publisher, "git", side_effect=lambda *args: notes if args[0] == "show" else publisher.PUBLIC_REMOTE), \
+                 patch.object(publisher, "verify_anonymous_pages") as verify, \
+                 patch.object(publisher, "ensure_public_repository"), \
+                 patch.object(publisher, "GitCodeRelease", return_value=client) as factory, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                publisher.main()
+            factory.assert_called_once_with(publisher.SOURCE_REPOSITORY, "test-token", "v1.2.0")
+            self.assertEqual(client.publish.call_args.args[1], app_commit)
+            self.assertIs(client.publish.call_args.kwargs["expected_private"], False)
+            verify.assert_called_once()
+            report = json.loads((apk.parent / "public-gitcode-release.json").read_text(encoding="utf-8"))
+            self.assertTrue(report["sourcePublic"])
+            self.assertEqual(report["sourceCommit"], app_commit)
+            self.assertNotIn("sourceRemainsPrivate", report)
 
 
 if __name__ == "__main__":
