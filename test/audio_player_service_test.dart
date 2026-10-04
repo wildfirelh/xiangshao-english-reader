@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:english_point_reading/models/textbook.dart';
 import 'package:english_point_reading/services/audio_player_service.dart';
+import 'package:english_point_reading/services/playback_preferences_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -70,6 +71,12 @@ class FakeAudioBackend implements AudioPlaybackBackend {
   final speedRequests = <double>[];
   Completer<void>? delaySpeed;
   bool failSpeed = false;
+  @override
+  double volume = 1.0;
+  final volumeRequests = <double>[];
+  final playedVolumes = <double>[];
+  Completer<void>? delayVolume;
+  bool failVolume = false;
   String? failedAsset;
   Completer<void>? delayNextLoad;
 
@@ -94,6 +101,7 @@ class FakeAudioBackend implements AudioPlaybackBackend {
   Future<void> play() async {
     playedAssets.add(_asset!);
     playedSpeeds.add(speed);
+    playedVolumes.add(volume);
   }
 
   @override
@@ -102,6 +110,14 @@ class FakeAudioBackend implements AudioPlaybackBackend {
     await delaySpeed?.future;
     if (failSpeed) throw StateError('Speed unavailable');
     speed = value;
+  }
+
+  @override
+  Future<void> setVolume(double value) async {
+    volumeRequests.add(value);
+    await delayVolume?.future;
+    if (failVolume) throw StateError('Volume unavailable');
+    volume = value;
   }
 
   @override
@@ -124,7 +140,218 @@ class FakeAudioBackend implements AudioPlaybackBackend {
   Future<void> dispose() => _states.close();
 }
 
+class FakePlaybackPreferences implements PlaybackPreferencesStore {
+  FakePlaybackPreferences({this.savedSpeed});
+
+  double? savedSpeed;
+  Completer<double?>? delayedLoad;
+  Completer<void>? delayedSave;
+  final writes = <double>[];
+  int failuresRemaining = 0;
+  bool failLoad = false;
+
+  @override
+  Future<double?> loadSpeed() async {
+    if (failLoad) throw StateError('Preferences unavailable');
+    return delayedLoad == null ? savedSpeed : delayedLoad!.future;
+  }
+
+  @override
+  Future<void> saveSpeed(double speed) async {
+    writes.add(speed);
+    await delayedSave?.future;
+    if (failuresRemaining > 0) {
+      failuresRemaining--;
+      throw StateError('Preferences write failed');
+    }
+    savedSpeed = speed;
+  }
+}
+
 void main() {
+  test('all six speeds affect active speech immediately and persist for the next player', () async {
+    final preferences = FakePlaybackPreferences();
+    final backend = FakeAudioBackend();
+    final service = AudioPlayerService(
+      backend: backend,
+      preferencesStore: preferences,
+    );
+    addTearDown(service.dispose);
+    await service.playSentence(
+      pageSentences: sentences,
+      targetSentence: sentences.first,
+    );
+    final stops = backend.stopCount;
+    expect(AudioPlayerService.supportedSpeeds, [0.5, 0.8, 1.0, 1.2, 1.5, 2.0]);
+    for (final speed in AudioPlayerService.supportedSpeeds) {
+      await service.setSpeed(speed);
+      expect(backend.speed, speed);
+      expect(service.currentSentenceId, 'one');
+      expect(service.isPlaying, isTrue);
+      expect(backend.stopCount, stops);
+    }
+    expect(preferences.savedSpeed, 2.0);
+    final reopenedBackend = FakeAudioBackend();
+    final reopened = AudioPlayerService(
+      backend: reopenedBackend,
+      preferencesStore: preferences,
+    );
+    addTearDown(reopened.dispose);
+    await reopened.playPage(page: bubblePage);
+    expect(reopened.currentSpeed, 2.0);
+    expect(reopenedBackend.playedSpeeds, [2.0]);
+  });
+
+  test(
+    'first playback waits for stored speed and invalid values fall back safely',
+    () async {
+      final preferences = FakePlaybackPreferences()
+        ..delayedLoad = Completer<double?>();
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(
+        backend: backend,
+        preferencesStore: preferences,
+      );
+      addTearDown(service.dispose);
+      final playback = service.playPage(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.loadedAssets, isEmpty);
+      preferences.delayedLoad!.complete(0.5);
+      await playback;
+      expect(backend.playedSpeeds, [0.5]);
+      for (final value in [0.9, -1.0, double.nan, double.infinity]) {
+        final fallback = AudioPlayerService(
+          backend: FakeAudioBackend(),
+          preferencesStore: FakePlaybackPreferences(savedSpeed: value),
+        );
+        await fallback.ready;
+        expect(fallback.currentSpeed, 1.0);
+        fallback.dispose();
+      }
+      final unavailable = AudioPlayerService(
+        backend: FakeAudioBackend(),
+        preferencesStore: FakePlaybackPreferences()..failLoad = true,
+      );
+      await unavailable.ready;
+      expect(unavailable.currentSpeed, 1.0);
+      unavailable.dispose();
+    },
+  );
+
+  test(
+    'manual speed beats a slow restore without delaying the native change',
+    () async {
+      final preferences = FakePlaybackPreferences()
+        ..delayedLoad = Completer<double?>();
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(
+        backend: backend,
+        preferencesStore: preferences,
+      );
+      addTearDown(service.dispose);
+      final choice = service.setSpeed(1.2);
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.speed, 1.2);
+      expect(service.currentSpeed, 1.2);
+      preferences.delayedLoad!.complete(0.5);
+      await choice;
+      expect(backend.speedRequests, [1.2]);
+      expect(preferences.savedSpeed, 1.2);
+    },
+  );
+
+  test(
+    'rapid native speed changes do not wait for slow serialized disk writes',
+    () async {
+      final preferences = FakePlaybackPreferences()
+        ..delayedSave = Completer<void>();
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(
+        backend: backend,
+        preferencesStore: preferences,
+      );
+      addTearDown(service.dispose);
+      await service.ready;
+      final first = service.setSpeed(0.5);
+      final second = service.setSpeed(1.2);
+      final last = service.setSpeed(2.0);
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.speed, 2.0);
+      expect(preferences.writes, [0.5]);
+      await service.playPage(page: bubblePage);
+      expect(backend.playedSpeeds, [2.0]);
+      preferences.delayedSave!.complete();
+      await Future.wait([first, second, last]);
+      expect(preferences.writes, [0.5, 1.2, 2.0]);
+      expect(preferences.savedSpeed, 2.0);
+    },
+  );
+
+  test('a failed native speed leaves preferences intact and later choices still work', () async {
+    final preferences = FakePlaybackPreferences(savedSpeed: 0.8);
+    final backend = FakeAudioBackend();
+    final service = AudioPlayerService(
+      backend: backend,
+      preferencesStore: preferences,
+    );
+    addTearDown(service.dispose);
+    await service.ready;
+    backend.failSpeed = true;
+    await expectLater(service.setSpeed(1.5), throwsStateError);
+    expect(service.currentSpeed, 0.8);
+    expect(preferences.writes, isEmpty);
+    expect(preferences.savedSpeed, 0.8);
+    backend.failSpeed = false;
+    await service.setSpeed(1.2);
+    expect(preferences.savedSpeed, 1.2);
+  });
+
+  test(
+    'a failed latest save rolls speech back to the last saved speed',
+    () async {
+      final preferences = FakePlaybackPreferences(savedSpeed: 0.8)
+        ..failuresRemaining = 1;
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(
+        backend: backend,
+        preferencesStore: preferences,
+      );
+      addTearDown(service.dispose);
+      await service.ready;
+      await expectLater(service.setSpeed(1.5), throwsStateError);
+      expect(service.currentSpeed, 0.8);
+      expect(backend.speed, 0.8);
+      expect(preferences.savedSpeed, 0.8);
+      await service.setSpeed(2.0);
+      expect(preferences.savedSpeed, 2.0);
+      expect(backend.speed, 2.0);
+    },
+  );
+
+  test('an old failed save never rolls a newer native choice back', () async {
+    final preferences = FakePlaybackPreferences(savedSpeed: 0.8)
+      ..delayedSave = Completer<void>()
+      ..failuresRemaining = 1;
+    final backend = FakeAudioBackend();
+    final service = AudioPlayerService(
+      backend: backend,
+      preferencesStore: preferences,
+    );
+    addTearDown(service.dispose);
+    await service.ready;
+    final first = service.setSpeed(0.5);
+    final failure = expectLater(first, throwsStateError);
+    final latest = service.setSpeed(1.5);
+    await Future<void>.delayed(Duration.zero);
+    expect(backend.speed, 1.5);
+    preferences.delayedSave!.complete();
+    await failure;
+    await latest;
+    expect(backend.speedRequests, [0.8, 0.5, 1.5]);
+    expect(service.currentSpeed, 1.5);
+    expect(preferences.savedSpeed, 1.5);
+  });
+
   test('speed affects current playback and subsequent sentences without interruption', () async {
     final backend = FakeAudioBackend();
     final service = AudioPlayerService(backend: backend);
@@ -166,7 +393,15 @@ void main() {
       backend.failSpeed = true;
       await expectLater(service.setSpeed(0.8), throwsStateError);
       expect(service.currentSpeed, 1.0);
-      for (final value in [0.0, -1.0, double.nan, double.infinity]) {
+      for (final value in [
+        0.0,
+        -1.0,
+        0.9,
+        1.1,
+        2.1,
+        double.nan,
+        double.infinity,
+      ]) {
         await expectLater(service.setSpeed(value), throwsArgumentError);
       }
     },

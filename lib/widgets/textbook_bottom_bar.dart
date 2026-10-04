@@ -29,6 +29,84 @@ class TextbookBottomBar extends StatelessWidget {
   final VoidCallback? onReplay;
   final VoidCallback? onDismissTranslation;
 
+  static String _speedLabel(double speed) => '${speed.toStringAsFixed(1)}x';
+
+  void _cycleSpeed() {
+    final speeds = AudioPlayerService.supportedSpeeds;
+    final index = speeds.indexOf(currentSpeed);
+    onSpeedChanged?.call(speeds[(index + 1) % speeds.length]);
+  }
+
+  Future<void> _chooseSpeed(BuildContext context) async {
+    var selected = false;
+    final speed = await showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
+          ? AnimationStyle.noAnimation
+          : null,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '选择播放语速',
+                      style: Theme.of(sheetContext).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '关闭语速选择',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              for (final value in AudioPlayerService.supportedSpeeds)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: ListTile(
+                    key: ValueKey('speed-option-${_speedLabel(value)}'),
+                    title: Text(
+                      _speedLabel(value),
+                      semanticsLabel:
+                          '播放语速 ${_speedLabel(value)}${value == currentSpeed ? '，当前选中' : ''}',
+                    ),
+                    selected: value == currentSpeed,
+                    selectedTileColor: Theme.of(sheetContext)
+                        .colorScheme
+                        .secondaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    trailing: value == currentSpeed
+                        ? const Icon(Icons.check)
+                        : null,
+                    onTap: () {
+                      if (selected) return;
+                      selected = true;
+                      Navigator.pop(sheetContext, value);
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (context.mounted && speed != null && speed != currentSpeed) {
+      onSpeedChanged?.call(speed);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -118,21 +196,22 @@ class TextbookBottomBar extends StatelessWidget {
                     ),
                   );
                   final speedButton = Tooltip(
-                    message: currentSpeed == 1.0
-                        ? '语速：标准，点击切换慢速'
-                        : '语速：慢速，点击切换标准',
+                    message: '语速 ${_speedLabel(currentSpeed)}，点击切换下一档；长按选择语速',
                     child: TextButton(
                       key: const Key('playback-speed'),
                       style: TextButton.styleFrom(
                         minimumSize: const Size(64, 48),
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
-                      onPressed: onSpeedChanged == null
+                      onPressed: onSpeedChanged == null ? null : _cycleSpeed,
+                      onLongPress: onSpeedChanged == null
                           ? null
-                          : () => onSpeedChanged!(
-                              currentSpeed == 1.0 ? 0.8 : 1.0,
-                            ),
-                      child: Text(currentSpeed == 1.0 ? '1.0x' : '0.8x 慢速'),
+                          : () => _chooseSpeed(context),
+                      child: Text(
+                        _speedLabel(currentSpeed),
+                        semanticsLabel:
+                            '播放语速 ${_speedLabel(currentSpeed)}，点击切换下一档，长按选择语速',
+                      ),
                     ),
                   );
                   final translationButton = IconButton.filledTonal(

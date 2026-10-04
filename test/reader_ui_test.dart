@@ -29,6 +29,11 @@ class _SilentBackend implements AudioPlaybackBackend {
 
   final bool failAsset;
   int stopCount = 0;
+  @override
+  double volume = 1.0;
+
+  @override
+  Future<void> setVolume(double value) async => volume = value;
 
   @override
   Stream<PlayerState> get playerStateStream => const Stream.empty();

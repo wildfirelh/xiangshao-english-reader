@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/textbook.dart';
 import '../models/textbook_unit.dart';
 import '../services/audio_player_service.dart';
+import '../services/app_update_service.dart';
 import '../services/reading_progress_store.dart';
+import '../widgets/app_update_entry.dart';
 import 'textbook_reader_screen.dart';
 
 class HomeShelfScreen extends StatefulWidget {
@@ -12,6 +14,7 @@ class HomeShelfScreen extends StatefulWidget {
     required this.book,
     this.progressStore,
     this.audioPlayerFactory,
+    this.updateService,
     this.coverPath = 'assets/textbooks/xiangshao_3_1/images/cover.webp',
   });
 
@@ -19,6 +22,7 @@ class HomeShelfScreen extends StatefulWidget {
   final Textbook book;
   final ReadingProgressStore? progressStore;
   final AudioPlayerService Function()? audioPlayerFactory;
+  final AppUpdateService? updateService;
   final String coverPath;
 
   @override
@@ -140,7 +144,11 @@ class _HomeShelfScreenState extends State<HomeShelfScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AppUpdateEntry(service: widget.updateService),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
                     '我的教材',
                     style: theme.textTheme.titleMedium?.copyWith(

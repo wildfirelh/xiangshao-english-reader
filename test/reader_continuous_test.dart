@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:english_point_reading/models/textbook.dart';
 import 'package:english_point_reading/screens/textbook_reader_screen.dart';
+import 'package:english_point_reading/services/audio_interruption_source.dart';
 import 'package:english_point_reading/services/audio_player_service.dart';
 import 'package:english_point_reading/widgets/interactive_textbook_page.dart';
 import 'package:english_point_reading/widgets/textbook_bottom_bar.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'audio_player_service_test.dart' show FakeAudioBackend;
+import 'audio_interruptions_test.dart' show FakeInterruptions;
 import 'helpers/memory_reading_progress_store.dart';
 
 const _one = PointSentence(
@@ -79,8 +81,13 @@ void main() {
     bool reduceMotion = false,
     bool startPlayback = true,
     TextbookPage firstPage = _firstPage,
+    AudioInterruptionSource? interruptions,
+    MemoryReadingProgressStore? progress,
   }) async {
-    final service = AudioPlayerService(backend: backend);
+    final service = AudioPlayerService(
+      backend: backend,
+      interruptionSource: interruptions,
+    );
     addTearDown(service.dispose);
     await tester.pumpWidget(
       MaterialApp(
@@ -88,7 +95,7 @@ void main() {
           data: MediaQueryData(disableAnimations: reduceMotion),
           child: TextbookReaderScreen(
             audioPlayerService: service,
-            progressStore: MemoryReadingProgressStore(),
+            progressStore: progress ?? MemoryReadingProgressStore(),
             book: Textbook(
               bookId: 'test',
               title: 'Test',
@@ -332,13 +339,49 @@ void main() {
   );
 
   testWidgets(
+    'tapping original page during auto-turn preserves active duck and saves source progress',
+    (tester) async {
+      final backend = FakeAudioBackend()..volume = 0.6;
+      final interruptions = FakeInterruptions();
+      final progress = MemoryReadingProgressStore();
+      final service = await open(
+        tester,
+        backend,
+        interruptions: interruptions,
+        progress: progress,
+      );
+      interruptions.beginDuck();
+      await tester.pump();
+      expect(backend.volume, 0.25);
+      backend.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 145));
+      expect(find.text('第 2 / 2 页'), findsOneWidget);
+      await tapPageAt(tester, const Offset(0.79, 0.36));
+      await tester.pumpAndSettle();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      expect(service.currentMode, PlayMode.single);
+      expect(service.currentSentenceId, 'one');
+      expect(progress.pages['test'], 8);
+      expect(backend.playedAssets, ['assets/bubble-one.mp3', 'assets/one.mp3']);
+      expect(backend.playedVolumes, [0.6, 0.25]);
+      expect(backend.volume, 0.25);
+      interruptions.endDuck();
+      for (var step = 0; step < 6; step++) {
+        await tester.pump(const Duration(milliseconds: 30));
+      }
+      expect(backend.volume, closeTo(0.6, 0.0001));
+    },
+  );
+
+  testWidgets(
     'auto-turn plays bubbles in sequence, keeps speed, and ends at book end',
     (tester) async {
       final backend = FakeAudioBackend();
       final service = await open(tester, backend);
-      await tester.tap(find.byKey(const Key('playback-speed')));
+      await service.setSpeed(0.8);
       await tester.pumpAndSettle();
-      expect(find.text('0.8x 慢速'), findsOneWidget);
+      expect(find.text('0.8x'), findsOneWidget);
       backend.complete();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 120));

@@ -5,6 +5,7 @@ import 'models/textbook.dart';
 import 'repositories/textbook_repository.dart';
 import 'screens/home_shelf_screen.dart';
 import 'services/reading_progress_store.dart';
+import 'services/app_update_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,10 +14,16 @@ Future<void> main() async {
 }
 
 class PointReadingApp extends StatefulWidget {
-  const PointReadingApp({super.key, this.bookFuture, this.progressStore});
+  const PointReadingApp({
+    super.key,
+    this.bookFuture,
+    this.progressStore,
+    this.updateService,
+  });
 
   final Future<Textbook>? bookFuture;
   final ReadingProgressStore? progressStore;
+  final AppUpdateService? updateService;
 
   @override
   State<PointReadingApp> createState() => _PointReadingAppState();
@@ -44,11 +51,13 @@ class _PointReadingAppState extends State<PointReadingApp> {
               key: ValueKey(snapshot.data!.bookId),
               book: snapshot.data!,
               progressStore: widget.progressStore,
+              updateService: widget.updateService,
             );
           }
           if (snapshot.hasError) {
             return HomeShelfScreen(
               progressStore: widget.progressStore,
+              updateService: widget.updateService,
               book: const Textbook(bookId: 'mock', title: '英语点读', pages: []),
             );
           }

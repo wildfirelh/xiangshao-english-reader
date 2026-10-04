@@ -181,19 +181,20 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     // A deliberate page tap always wins over playback, loading and an animated
     // automatic page turn. Apply the mode before any asynchronous work.
     final tappedPageIndex = pageIndex ?? _pageIndex;
+    final pageChanged = _pageIndex != tappedPageIndex;
     _audio.setPlayMode(PlayMode.single);
     _cancelAutoAdvance();
-    if (_pageController?.hasClients == true) {
-      // Settle even an ordinary previous/next-page animation to the page whose
-      // hit region was tapped, before starting that page's sentence audio.
-      _pageController!.jumpToPage(tappedPageIndex);
-    }
-    final pageChanged = _pageIndex != tappedPageIndex;
     setState(() {
       _pageIndex = tappedPageIndex;
       _previewSentence = null;
       _dismissedTranslationId = null;
     });
+    if (_pageController?.hasClients == true) {
+      // Settle even an ordinary previous/next-page animation to the page whose
+      // hit region was tapped. Updating the index first prevents a redundant
+      // navigation stop from clearing an active system audio duck.
+      _pageController!.jumpToPage(tappedPageIndex);
+    }
     if (pageChanged) unawaited(_saveProgress(tappedPageIndex));
     if (sentence.audioPath.isEmpty) {
       unawaited(_audio.stop());

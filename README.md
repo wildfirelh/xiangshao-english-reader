@@ -4,10 +4,13 @@ Flutter 项目，已实现教材 JSON 解析、Asset 加载、单句点读、整
 
 ## 下载与开源
 
-- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.3.0)
+- [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.4.0/xiangshao-english-reader-v1.4.0-build5-arm64-v8a.apk)
+- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0)
 - [AtomGit：下载 APK 与查看版本更新](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
 
 每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
+
+当前版本为 `1.4.0+5`，增加通知降音、六档持久化倍速和码云应用内更新。首次从旧版升级需要下载本版 APK 覆盖安装；此后可从书架“检查更新”直接下载并安装后续版本，详见 [版本说明](releases/v1.4.0.md)。
 
 单句资源包含 65 张正文图片、1,185 个点读条目和 MP3，722 条不同英文内容的翻译全部成功，清单没有空译文。单句音频通过豆包语音合成模型 2.0 的 V3 HTTP SSE API 生成，采用下表指定的六类固定角色音色；779 组不同的文本与音色参数复用于 1,185 个点读音频文件。旧音频已移至本地 `.asset-cache/previous-audio/`，不参与 Flutter 打包。六类角色的联网短句试音保留在 `build/tts-check/`。
 
@@ -140,7 +143,7 @@ py -3.13 -m unittest tools.test_compress_images_to_webp -v
 
 - 点按页面上的句子热区，立即以**单句点读**播放对应小句；不论正在连读、加载气泡音频、暂停，还是自动翻页，手动点读都会取消连续调度并将底栏同步改为“单句点读”。该小句读完停止，不自动播放下一句或跨页。
 - 点击底栏“单句点读”按钮切为**整页连读**并开始播放完整气泡；已有选中句时从它所在的气泡开始，否则从当前页第一个气泡开始。同一气泡的多句文本使用一条整段音频，连读时高亮整个气泡，并显示整段释义。点击气泡内两行之间的空白，也可打断连读并点读该气泡的首个小句；精确句子热区优先。
-- 底栏语速按钮在 `1.0x`（标准）与 `0.8x 慢速` 间切换，立即调整正在播放的音频，并对后续句子和跨页连读生效；速度保留至本次阅读器关闭，不重新生成 MP3。
+- 底栏语速按钮点按依次循环 `0.5x / 0.8x / 1.0x / 1.2x / 1.5x / 2.0x`，长按打开直选列表。立即调整当前及后续音频，不重新生成 MP3；语速写入本地偏好，下次打开阅读器自动恢复。列表支持大字号滚动与系统减少动画设置。
 - 连读结束一页后，会平滑翻至下一页并播放第一个气泡；没有英文气泡的页面会跳过，全书最后一个气泡后停止。手动翻页或切回单句模式也会取消待执行的自动播放。
 - 高亮使用 22% 不透明度的黄色荧光笔底色、4dp 圆角和 180ms 淡入，完全移除描边；系统启用“减少动态效果”时取消动画。窄屏和大字号下控制栏自动换行。
 
@@ -291,6 +294,8 @@ py -3.13 tools/publish_github_release.py
 | --- | --- | --- | --- |
 | 源码与下载 | [xiangshao-english-reader](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader) | [wildfirelh/xiangshao-english-reader](https://github.com/wildfirelh/xiangshao-english-reader) | 公开：源码、教材资产和开发说明；Release 提供中文版本说明、APK 和 `.apk.sha256` 附件 |
 
+新增同名公开 [Gitee 仓库](https://gitee.com/wildfire666/xiangshao-english-reader)，同时提供源码、三个架构的 APK、校验文件及 `update.json`，作为应用内更新渠道。码云网页的部分下载入口可能提示登录；本应用和上方下载链接直接使用已验证的公开 Release 附件地址。
+
 保留现有源码提交历史，旧独立下载仓库已在 Release 和附件迁移、匿名访问验证完成后删除。两边 Release 必须使用同一版本说明、同一安装包和同一 SHA-256 校验文件；APK 作为 Release 附件发布，不提交 APK Git 对象。
 
 保留源码仓库 AtomGit → GitHub 的原生 Push 镜像。首次同步与“立即同步”已验证；原生镜像同步 Git 提交、分支和标签，Release 说明及 APK 附件由 `tools/publish_github_release.py` 单独同步，脚本也会检查并补齐 Git 同步。
@@ -299,10 +304,26 @@ py -3.13 tools/publish_github_release.py
 
 公开发布必须核对两端源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载两端 APK 比较 SHA-256。只有两端匿名访问和下载校验均通过，才将该版本视为同步与公开发布完成。
 
-当前应用版本与说明为 [v1.3.0](releases/v1.3.0.md)，下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases) 与 [GitHub v1.3.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.3.0)。发布脚本检查两端匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.3.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
+当前应用版本与说明为 [v1.4.0](releases/v1.4.0.md)，下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)、[GitHub v1.4.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0) 和 [Gitee Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.4.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 
 ## 系统音频中断
 
-使用 `audio_session` 的 `speech` 配置，并由播放服务统一处理焦点丢失、临时中断、duck 请求和耳机拔出。进入 inactive / hidden / paused / detached 时也暂停，保留当前句子或气泡高亮与语速，并取消尚未完成的加载和跨页连读。回到前台或中断结束后保持暂停；点击热区进入单句点读，点击“重听”从所选小句或气泡开头重新播放。返回书架仍执行停止并清除选择。
+`audio_session` 配置 Android `media` / `speech`，并将 `androidWillPauseWhenDucked` 设为 `false`。系统请求降音时，将音量降至 `0.25`（原音量更低时保持更低值），保留正在执行的连读；降音结束后约 150ms 内渐进恢复到打断前音量。重复降音不重复缩减音量，新降音会取消尚未结束的恢复动画。
+
+来电、需要暂停的焦点中断、未知焦点丢失和耳机拔出仍暂停。进入 inactive / hidden / paused / detached 时也暂停，保留当前句子或气泡高亮与语速，并取消尚未完成的加载和跨页连读。回到前台或暂停中断结束后保持暂停；点击热区进入单句点读，点击“重听”从所选小句或气泡开头重新播放。返回书架仍执行停止并清除选择。
+
+## 应用内更新
+
+书架启动时在后台检查 Gitee 最新正式 Release，成功检查后 24 小时内不重复自动请求；“检查更新”按钮支持随时手动检查。无网络或没有新版时，自动检查不打断阅读。发现新版后展示实际新增功能，用户确认后在应用内下载，显示进度并支持取消；取消或失败的临时文件会清理，完整且有效的缓存可复用。
+
+安装包下载到 App 私有缓存目录，核对字节数、SHA-256、包名、架构、递增版本和当前应用的签名身份后，调用 Android 系统安装器。Android 8 及以上首次安装更新时，需要在系统设置允许“湘少英语三上点读”安装应用；返回后继续安装。Internet 权限为普通安装权限，不显示运行时授权弹窗；不申请广泛存储权限。取消系统安装后可重试。覆盖安装保留原有阅读进度和倍速偏好。
+
+发布新增命令：
+
+```powershell
+py -3.13 tools/publish_gitee_release.py
+```
+
+该命令同步同仓 `main` 和原有 annotated 标签，归档三个 ABI 安装包、上传并匿名完整下载核对每个 APK，最后上传 `update.json`，避免更新器看到未就绪的包。更新清单使用规范构建号 `5` 比较版本，分包 versionCode 分别为 `1005 / 2005 / 4005`。可通过 `--abi` 限定发布架构，或 `--prepare-only` 仅准备本地归档；归档与版本说明确定后不覆盖已有正式内容。
 
 配置参考：[Flutter Android 发布指南](https://docs.flutter.dev/deployment/android)、[audio_session 文档](https://pub.dev/packages/audio_session/versions/0.1.25)、[flutter_launcher_icons 文档](https://pub.dev/packages/flutter_launcher_icons)。

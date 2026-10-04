@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../models/textbook.dart';
 import 'audio_interruption_source.dart';
+import 'playback_preferences_store.dart';
 
 enum PlayMode { single, continuous }
 
@@ -26,6 +27,10 @@ class PagePlaybackCompletion {
 /// Small boundary around just_audio so scheduling can be tested without a device.
 abstract class AudioPlaybackBackend {
   Stream<PlayerState> get playerStateStream;
+
+  double get volume;
+
+  Future<void> setVolume(double volume);
 
   Future<Duration?> setAsset(String assetPath);
 
@@ -50,6 +55,12 @@ class JustAudioPlaybackBackend implements AudioPlaybackBackend {
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
 
   @override
+  double get volume => _player.volume;
+
+  @override
+  Future<void> setVolume(double volume) => _player.setVolume(volume);
+
+  @override
   Future<Duration?> setAsset(String assetPath) => _player.setAsset(assetPath);
 
   @override
@@ -72,21 +83,40 @@ class AudioPlayerService extends ChangeNotifier {
   AudioPlayerService({
     AudioPlaybackBackend? backend,
     AudioInterruptionSource? interruptionSource,
+    PlaybackPreferencesStore? preferencesStore,
   }) : _backend = backend ?? JustAudioPlaybackBackend(),
+       _preferences =
+           preferencesStore ??
+           (backend == null
+               ? SharedPreferencesPlaybackPreferencesStore.instance
+               : InMemoryPlaybackPreferencesStore()),
        _interruptions =
            interruptionSource ??
            (backend == null ? SystemAudioInterruptionSource() : null) {
     _stateSubscription = _backend.playerStateStream.listen(_onPlayerState);
-    _pauseSubscription = _interruptions?.pauseRequests.listen((_) {
-      unawaited(pause());
-    });
+    _interruptionSubscription = _interruptions?.interruptions.listen(
+      _onInterruption,
+      onError: (Object error) {
+        debugPrint('AudioPlayerService: audio focus event failed: $error');
+      },
+    );
+    _ready = _restoreSpeedPreferences();
   }
 
   final AudioPlaybackBackend _backend;
+  final PlaybackPreferencesStore _preferences;
+  late final Future<void> _ready;
   late final StreamSubscription<PlayerState> _stateSubscription;
   final AudioInterruptionSource? _interruptions;
-  StreamSubscription<void>? _pauseSubscription;
+  StreamSubscription<AudioInterruptionEvent>? _interruptionSubscription;
   bool _isForeground = true;
+
+  static const supportedSpeeds = <double>[0.5, 0.8, 1.0, 1.2, 1.5, 2.0];
+  Future<void> get ready => _ready;
+  bool _ducked = false;
+  double? _volumeBeforeDuck;
+  int _volumeGeneration = 0;
+  Future<void> _pendingVolume = Future<void>.value();
 
   String? _currentSentenceId;
   DialogueBubble? _currentBubble;
@@ -94,8 +124,10 @@ class AudioPlayerService extends ChangeNotifier {
   PlayMode _currentMode = PlayMode.single;
   double _currentSpeed = 1.0;
   double _appliedSpeed = 1.0;
+  double _persistedSpeed = 1.0;
   int _speedRequest = 0;
   Future<void> _pendingSpeed = Future<void>.value();
+  Future<void> _pendingPreferences = Future<void>.value();
   int _continuationGeneration = 0;
   final _pageCompletions = StreamController<PagePlaybackCompletion>.broadcast(
     sync: true,
@@ -127,26 +159,182 @@ class AudioPlayerService extends ChangeNotifier {
     if (_disposed) {
       return Future.error(StateError('AudioPlayerService has been disposed.'));
     }
-    if (!speed.isFinite || speed <= 0) {
+    if (!supportedSpeeds.contains(speed)) {
       return Future.error(
-        ArgumentError.value(speed, 'speed', 'Must be finite and positive'),
+        ArgumentError.value(
+          speed,
+          'speed',
+          'Must be a supported playback speed',
+        ),
       );
     }
     final request = ++_speedRequest;
     _currentSpeed = speed;
     notifyListeners();
-    final result = _pendingSpeed.then((_) async {
+    final applied = _pendingSpeed.then((_) async {
       if (_disposed) return;
-      await _backend.setSpeed(speed);
-      _appliedSpeed = speed;
-    });
-    _pendingSpeed = result.catchError((Object error) {
-      if (!_disposed && request == _speedRequest) {
-        _currentSpeed = _appliedSpeed;
-        notifyListeners();
+      try {
+        await _backend.setSpeed(speed);
+        _appliedSpeed = speed;
+      } catch (error) {
+        if (!_disposed && request == _speedRequest) {
+          _currentSpeed = _appliedSpeed;
+          notifyListeners();
+        }
+        rethrow;
       }
     });
+    _pendingSpeed = applied.catchError((Object _) {});
+    // Disk writes are ordered separately: a slow save must not delay a new
+    // selection taking effect on speech that is already playing.
+    final result = _pendingPreferences.then((_) async {
+      await applied;
+      await ready;
+      if (_disposed) return;
+      final previousPreference = _persistedSpeed;
+      try {
+        await _preferences.saveSpeed(speed);
+        _persistedSpeed = speed;
+      } catch (error) {
+        try {
+          final rollback = _pendingSpeed.then((_) async {
+            // An old failed save must never undo a newer user selection.
+            if (_disposed || request != _speedRequest) return;
+            await _backend.setSpeed(previousPreference);
+            _appliedSpeed = previousPreference;
+          });
+          _pendingSpeed = rollback.catchError((Object _) {});
+          await rollback;
+        } catch (rollbackError) {
+          debugPrint(
+            'AudioPlayerService: could not restore speed: $rollbackError',
+          );
+        }
+        if (!_disposed) {
+          try {
+            await _preferences.saveSpeed(previousPreference);
+          } catch (rollbackError) {
+            debugPrint(
+              'AudioPlayerService: could not restore saved speed: $rollbackError',
+            );
+          }
+          if (request == _speedRequest) {
+            _currentSpeed = _appliedSpeed;
+            notifyListeners();
+          }
+        }
+        rethrow;
+      }
+    });
+    _pendingPreferences = result.catchError((Object _) {});
     return result;
+  }
+
+  Future<void> _restoreSpeedPreferences() async {
+    try {
+      final saved = await _preferences.loadSpeed();
+      if (_disposed || !supportedSpeeds.contains(saved)) return;
+      final validSpeed = saved!;
+      _persistedSpeed = validSpeed;
+      if (_speedRequest != 0) return;
+      final restored = _pendingSpeed.then((_) async {
+        if (_disposed || _speedRequest != 0) return;
+        await _backend.setSpeed(validSpeed);
+        _appliedSpeed = validSpeed;
+        if (!_disposed && _speedRequest == 0) {
+          _currentSpeed = validSpeed;
+          notifyListeners();
+        }
+      });
+      _pendingSpeed = restored.catchError((Object _) {});
+      await restored;
+    } catch (error) {
+      debugPrint('AudioPlayerService: could not restore saved speed: $error');
+    }
+  }
+
+  void _onInterruption(AudioInterruptionEvent event) {
+    if (_disposed) return;
+    if (!event.begin) {
+      // AudioSession can label focus regained as pause-end after a new clip
+      // activates focus. The active duck state decides whether to restore.
+      if (_ducked) {
+        unawaited(_restoreDuckedVolume(smooth: true));
+      }
+    } else if (event.type == AudioInterruptionType.duck) {
+      if (_isForeground) _beginDucking();
+    } else {
+      // Calls, unknown focus loss and unplugged headphones suspend the lesson.
+      // Their end only changes system focus; it never resumes playback.
+      unawaited(pause());
+    }
+  }
+
+  double? _readVolume() {
+    try {
+      final volume = _backend.volume;
+      return volume.isFinite && volume >= 0 ? volume : null;
+    } catch (error) {
+      debugPrint('AudioPlayerService: could not read volume: $error');
+      return null;
+    }
+  }
+
+  void _beginDucking() {
+    // Retain the first volume even if another duck arrives during restoration.
+    _volumeBeforeDuck ??= _readVolume();
+    final original = _volumeBeforeDuck;
+    if (original == null) return;
+    _ducked = true;
+    final generation = ++_volumeGeneration;
+    final quiet = original < 0.25 ? original : 0.25;
+    unawaited(_writeVolume(quiet, generation));
+  }
+
+  Future<bool> _writeVolume(double volume, int generation) {
+    final write = _pendingVolume.then((_) async {
+      if (_disposed || generation != _volumeGeneration) return false;
+      try {
+        await _backend.setVolume(volume);
+        return true;
+      } catch (error) {
+        if (!_disposed) {
+          debugPrint('AudioPlayerService: could not change volume: $error');
+        }
+        return false;
+      }
+    });
+    // Native writes finish in order, and stale fade steps are skipped. Failures
+    // are contained here so focus callbacks cannot create an unhandled future.
+    _pendingVolume = write.then<void>((_) {});
+    return write;
+  }
+
+  Future<void> _restoreDuckedVolume({required bool smooth}) async {
+    _ducked = false;
+    final generation = ++_volumeGeneration;
+    final original = _volumeBeforeDuck;
+    if (original == null) return;
+    await _pendingVolume;
+    if (_disposed || generation != _volumeGeneration) return;
+    final start = _readVolume() ?? original;
+    var restored = false;
+    if (smooth && start != original) {
+      // Six short steps make the return gentle without delaying a new duck.
+      for (var step = 1; step <= 6; step++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+        if (_disposed || generation != _volumeGeneration) return;
+        restored = await _writeVolume(
+          start + (original - start) * step / 6,
+          generation,
+        );
+      }
+    } else {
+      restored = await _writeVolume(original, generation);
+    }
+    if (restored && !_disposed && generation == _volumeGeneration) {
+      _volumeBeforeDuck = null;
+    }
   }
 
   void setPlayMode(PlayMode mode) {
@@ -156,7 +344,14 @@ class AudioPlayerService extends ChangeNotifier {
     _currentMode = mode;
     if (mode == PlayMode.single && _currentBubble != null) {
       // A mode change must also invalidate a bubble whose asset is still loading.
-      unawaited(stop());
+      // A subsequent manual sentence still needs an active notification's duck.
+      ++_requestId;
+      _clearPlayback();
+      unawaited(
+        _backend.stop().catchError((Object error) {
+          debugPrint('AudioPlayerService: could not stop bubble: $error');
+        }),
+      );
       return;
     }
     notifyListeners();
@@ -240,10 +435,13 @@ class AudioPlayerService extends ChangeNotifier {
       try {
         await interruption;
         if (request != _requestId || _disposed) return;
+        await ready;
+        if (request != _requestId || _disposed) return;
         await _interruptions?.initialize();
         if (request != _requestId || _disposed) return;
         await _backend.setAsset(audioPath);
         await _pendingSpeed;
+        await _pendingVolume;
         if (request != _requestId || _disposed) return;
 
         _activePlaybackRequest = request;
@@ -272,7 +470,8 @@ class AudioPlayerService extends ChangeNotifier {
     ++_requestId;
     ++_continuationGeneration;
     _clearPlayback();
-    return _backend.stop();
+    return Future.wait([_backend.stop(), _restoreDuckedVolume(smooth: false)])
+        .then((_) {});
   }
 
   /// Suspend loading and continuation while retaining the selected sentence/bubble.
@@ -285,8 +484,10 @@ class AudioPlayerService extends ChangeNotifier {
     _observedPlayingRequest = null;
     _isPlaying = false;
     notifyListeners();
+    final restoreVolume = _restoreDuckedVolume(smooth: false);
     try {
       await _backend.pause();
+      await restoreVolume;
     } catch (error) {
       debugPrint('AudioPlayerService: could not pause: $error');
     }
@@ -387,9 +588,12 @@ class AudioPlayerService extends ChangeNotifier {
     _disposed = true;
     ++_requestId;
     ++_continuationGeneration;
+    ++_volumeGeneration;
+    _ducked = false;
+    _volumeBeforeDuck = null;
     unawaited(_pageCompletions.close());
     unawaited(_stateSubscription.cancel());
-    unawaited(_pauseSubscription?.cancel());
+    unawaited(_interruptionSubscription?.cancel());
     unawaited(_interruptions?.dispose());
     unawaited(_backend.dispose());
     super.dispose();

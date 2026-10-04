@@ -14,11 +14,23 @@ import 'audio_player_service_test.dart'
 import 'helpers/memory_reading_progress_store.dart';
 
 class FakeInterruptions implements AudioInterruptionSource {
-  final events = StreamController<void>.broadcast(sync: true);
+  final events = StreamController<AudioInterruptionEvent>.broadcast(sync: true);
   bool initialized = false;
   bool disposed = false;
   @override
-  Stream<void> get pauseRequests => events.stream;
+  Stream<AudioInterruptionEvent> get interruptions => events.stream;
+
+  void beginPause() =>
+      events.add(AudioInterruptionEvent(true, AudioInterruptionType.pause));
+
+  void endPause() =>
+      events.add(AudioInterruptionEvent(false, AudioInterruptionType.pause));
+
+  void beginDuck() =>
+      events.add(AudioInterruptionEvent(true, AudioInterruptionType.duck));
+
+  void endDuck() =>
+      events.add(AudioInterruptionEvent(false, AudioInterruptionType.duck));
   @override
   Future<void> initialize() async => initialized = true;
   @override
@@ -40,7 +52,7 @@ void main() {
     await service.setSpeed(.8);
     await service.playPage(page: bubblePage);
     expect(interruptions.initialized, isTrue);
-    interruptions.events.add(null);
+    interruptions.beginPause();
     expect(service.isPlaying, isFalse);
     expect(service.currentSentenceId, isNull);
     expect(service.currentBubbleId, 'bubble-one');
@@ -71,7 +83,7 @@ void main() {
       targetSentence: sentences.first,
     );
     await Future<void>.delayed(Duration.zero);
-    interruptions.events.add(null);
+    interruptions.beginPause();
     backend.delayFirstLoad!.complete();
     await loading;
     expect(backend.playedAssets, isEmpty);
@@ -119,7 +131,7 @@ void main() {
       addTearDown(service.dispose);
       final loading = service.playPage(page: bubblePage);
       await Future<void>.delayed(Duration.zero);
-      interruptions.events.add(null);
+      interruptions.beginPause();
       backend.delayFirstLoad!.complete();
       await loading;
       expect(service.currentBubble, same(bubbles.first));
