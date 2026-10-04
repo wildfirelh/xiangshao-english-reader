@@ -18,6 +18,7 @@ from urllib.parse import quote, urlsplit
 import requests
 
 from package_release import DEFAULT_AAPT, package_release, read_version, sha256_file
+from release_title import release_title
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.github.com"
 GH = Path(r"C:\Program Files\GitHub CLI\gh.exe")
@@ -268,9 +269,9 @@ class GitHubRelease:
             rf"xiangshao-english-reader-{re.escape(tag)}-build\d+-(?:arm64-v8a|armeabi-v7a|x86_64)\.apk", file.name)]
         if len(apk_files) != 1 or set(files) != {apk_files[0], apk_files[0].with_suffix(".apk.sha256")}:
             raise RuntimeError("GitHub public release may contain only the versioned APK and its checksum")
+        title = release_title(tag, notes)
         self.ensure_repository(repository, private=False)
         prefix = f"/repos/{repository}/releases"
-        title = f"湘少英语三上点读 {tag}"
         release = self.release(repository, tag)
         if release is None:
             release = self.request("POST", prefix, json={

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "xiangshao_3_1",
+    "title": "湘少版 三年级上册",
+    "grade": 3,
+    "term": 1,
+    "cover": "assets/textbooks/xiangshao_3_1/images/cover.webp",
+    "ready": true,
+    "totalUnits": 10,
+    "firstPageIndex": 8,
+    "pageCount": 65,
+    "units": [
+      {"number": 1, "title": "Hello!", "startPage": 8},
+      {"number": 2, "title": "What's your name?", "startPage": 13},
+      {"number": 3, "title": "How old are you?", "startPage": 18},
+      {"number": 4, "title": "This is my family", "startPage": 28},
+      {"number": 5, "title": "Is this your pen?", "startPage": 33},
+      {"number": 6, "title": "Touch your head", "startPage": 38},
+      {"number": 7, "title": "What colour is it?", "startPage": 48},
+      {"number": 8, "title": "What's this?", "startPage": 53},
+      {"number": 9, "title": "I like apples", "startPage": 58},
+      {"number": 10, "title": "Happy birthday!", "startPage": 63}
+    ]
+  },
+  {
+    "id": "xiangshao_3_2",
+    "title": "湘少版 三年级下册",
+    "grade": 3,
+    "term": 2,
+    "cover": "",
+    "ready": false,
+    "totalUnits": 10
+  }
+]

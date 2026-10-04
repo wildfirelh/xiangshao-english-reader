@@ -6,6 +6,23 @@ class TextbookUnit {
   // Physical PDF page, matching TextbookPage.pageIndex (not a list offset).
   final int startPage;
 
+  factory TextbookUnit.fromJson(Map<String, dynamic> json) {
+    final number = json['number'];
+    final title = json['title'];
+    final startPage = json['startPage'];
+    if (number is! int ||
+        number < 1 ||
+        title is! String ||
+        title.trim().isEmpty ||
+        startPage is! int ||
+        startPage < 1) {
+      throw const FormatException(
+        'Unit number/startPage must be positive integers and title non-empty.',
+      );
+    }
+    return TextbookUnit(number, title, startPage);
+  }
+
   String get label => 'Unit $number $title';
   int get printedPage => startPage - 7;
 

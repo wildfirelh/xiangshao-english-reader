@@ -22,6 +22,7 @@ from package_release import (
     ABI_VERSION_OFFSETS, DEFAULT_AAPT, package_release, read_version,
     sha256_file, write_sidecar,
 )
+from release_title import release_title
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -209,15 +210,17 @@ class GiteeRelease:
                                 files={"file": (file.name, source, "application/octet-stream")})
 
     def publish(self, tag, commit, notes, files, manifest):
+        title = release_title(tag, notes)
         self.ensure_owner()
         self.repository()
         release = self.release(tag)
         if release is None:
             release = self.request("POST", f"/repos/{REPOSITORY}/releases", data={
                 "tag_name": tag, "target_commitish": commit,
-                "name": f"湘少英语三上点读 {tag}", "body": notes, "prerelease": "false",
+                "name": title, "body": notes, "prerelease": "false",
             })
-        if (release.get("tag_name") != tag or release.get("target_commitish") != commit
+        if (release.get("tag_name") != tag or release.get("name") != title
+                or release.get("target_commitish") != commit
                 or release.get("body", "").strip() != notes.strip()
                 or release.get("prerelease") is not False):
             raise RuntimeError("Existing Gitee release differs; immutable releases are never overwritten")

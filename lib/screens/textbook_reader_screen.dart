@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/textbook.dart';
 import '../models/textbook_unit.dart';
 import '../services/audio_player_service.dart';
+import '../services/learning_controller.dart';
 import '../services/reading_progress_store.dart';
 import '../widgets/interactive_textbook_page.dart';
 import '../widgets/textbook_bottom_bar.dart';
@@ -17,11 +18,21 @@ class TextbookReaderScreen extends StatefulWidget {
     this.audioPlayerService,
     this.progressStore,
     this.initialPageIndex,
+    this.units,
+    this.firstPageIndex,
+    this.onPointRead,
+    this.learningController,
+    this.eyeReminderInterval = const Duration(minutes: 20),
   });
 
   final Textbook book;
   final AudioPlayerService? audioPlayerService;
   final ReadingProgressStore? progressStore;
+  final List<TextbookUnit>? units;
+  final int? firstPageIndex;
+  final Future<void> Function()? onPointRead;
+  final LearningController? learningController;
+  final Duration eyeReminderInterval;
 
   /// Physical PDF page; an explicit unit selection takes priority over progress.
   final int? initialPageIndex;
@@ -65,6 +76,10 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   bool _restoring = true;
   bool _saveErrorShown = false;
   StreamSubscription<PagePlaybackCompletion>? _completionSubscription;
+  StreamSubscription<void>? _readingSubscription;
+  Timer? _eyeReminderTimer;
+  bool _isForeground = true;
+  bool? _reminderWanted;
   PagePlaybackCompletion? _autoCompletion;
   int? _autoTarget;
   final _pageKeys = <int, GlobalKey<InteractiveTextbookPageState>>{};
@@ -84,6 +99,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _isForeground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
     if (lifecycle != null) {
       _audio.setForeground(lifecycle == AppLifecycleState.resumed);
     }
@@ -91,15 +107,54 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     _completionSubscription = _audio.pageCompletions.listen(
       (completion) => unawaited(_advanceAfterPage(completion)),
     );
+    _readingSubscription = _audio.playbackStarts.listen(
+      (_) => unawaited(_recordPointRead()),
+    );
+    widget.learningController?.addListener(_configureEyeReminder);
+    _configureEyeReminder();
     unawaited(_restoreProgress());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isForeground = state == AppLifecycleState.resumed;
+    _configureEyeReminder();
     _audio.setForeground(state == AppLifecycleState.resumed);
     if (state != AppLifecycleState.resumed) {
       _cancelAutoAdvance(settlePage: true);
     }
+  }
+
+  Future<void> _recordPointRead() async {
+    try {
+      if (widget.onPointRead case final record?) {
+        await record();
+      } else {
+        await widget.learningController?.recordPointRead(widget.book.bookId);
+      }
+    } catch (error) {
+      // A statistics write failure must not interrupt textbook audio.
+      debugPrint('Unable to save learning statistics: $error');
+    }
+  }
+
+  void _configureEyeReminder() {
+    final preferences = widget.learningController;
+    final wanted =
+        _isForeground &&
+        preferences != null &&
+        preferences.initialized &&
+        preferences.eyeReminderEnabled;
+    if (wanted == _reminderWanted) return;
+    _reminderWanted = wanted;
+    _eyeReminderTimer?.cancel();
+    _eyeReminderTimer = null;
+    if (!wanted || widget.eyeReminderInterval <= Duration.zero) return;
+    _eyeReminderTimer = Timer.periodic(widget.eyeReminderInterval, (_) {
+      if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('已经学习一会儿了，休息一下，看看远处吧。')));
+    });
   }
 
   Future<void> _restoreProgress() async {
@@ -136,6 +191,13 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
 
   void _onAudioChanged() {
     if (mounted) setState(() {});
+  }
+
+  int _printedPageFor(TextbookUnit unit) {
+    if (widget.firstPageIndex case final first?) {
+      return unit.startPage - first + 1;
+    }
+    return widget.units == null ? unit.printedPage : unit.startPage;
   }
 
   PointSentence? get _activeSentence {
@@ -381,6 +443,9 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     WidgetsBinding.instance.removeObserver(this);
     _cancelAutoAdvance();
     unawaited(_completionSubscription?.cancel());
+    unawaited(_readingSubscription?.cancel());
+    widget.learningController?.removeListener(_configureEyeReminder);
+    _eyeReminderTimer?.cancel();
     _audio.removeListener(_onAudioChanged);
     if (_ownsAudio) _audio.dispose();
     _pageController?.dispose();
@@ -393,7 +458,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     final activeBubble = _activeBubble;
     final activeId = activeBubble?.id ?? active?.id;
     final colors = Theme.of(context).colorScheme;
-    final units = TextbookUnit.forBook(widget.book.bookId);
+    final units = widget.units ?? TextbookUnit.forBook(widget.book.bookId);
     return PopScope<void>(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
@@ -433,11 +498,15 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                                     subtitle: Text(
                                       target < 0
                                           ? '资源尚未导入'
-                                          : '教材第 ${unit.printedPage} 页',
+                                          : '教材第 ${_printedPageFor(unit)} 页',
                                     ),
                                     selected:
                                         currentPage >= unit.startPage &&
-                                        currentPage < unit.startPage + 5,
+                                        !units.any(
+                                          (next) =>
+                                              next.startPage > unit.startPage &&
+                                              next.startPage <= currentPage,
+                                        ),
                                     enabled: !_restoring && target >= 0,
                                     onTap: () {
                                       _cancelAutoAdvance();

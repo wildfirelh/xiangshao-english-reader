@@ -248,15 +248,15 @@ class GiteePublishTests(unittest.TestCase):
         self.manifest.write_text('{"schemaVersion":1}')
         self.files = [self.apk, self.checksum]
         self.release = {"id": 8, "tag_name": "v1.4.0", "target_commitish": "a" * 40,
-                        "body": "中文说明", "prerelease": False}
+                        "name": "湘少英语三上点读 v1.4.0", "body": "中文说明", "prerelease": False}
         self.client = publisher.GiteeRelease("test-token")
         self.addCleanup(self.client.session.close)
 
     def asset(self, file):
         return {"name": file.name, "size": file.stat().st_size,
-                "browser_download_url": publisher.download_url("v1.4.0", file.name)}
+                "browser_download_url": publisher.download_url(self.release["tag_name"], file.name)}
 
-    def publish(self, existing=None, attachments=()):
+    def publish(self, existing=None, attachments=(), notes="中文说明"):
         latest = {**self.release, "assets": [self.asset(file) for file in [*self.files, self.manifest]]}
         with patch.object(self.client, "ensure_owner"), patch.object(self.client, "repository"), \
              patch.object(self.client, "release", return_value=existing), \
@@ -264,7 +264,7 @@ class GiteePublishTests(unittest.TestCase):
              patch.object(self.client, "request", side_effect=[self.release, latest] if existing is None else [latest]) as request, \
              patch.object(self.client, "upload", side_effect=lambda _, file: self.asset(file)) as upload, \
              patch.object(publisher, "verify_download") as verify:
-            result = self.client.publish("v1.4.0", "a" * 40, "中文说明", self.files, self.manifest)
+            result = self.client.publish(self.release["tag_name"], "a" * 40, notes, self.files, self.manifest)
         return result, request, upload, verify
 
     def test_apks_are_verified_before_manifest_upload_and_latest_metadata(self):
@@ -272,8 +272,24 @@ class GiteePublishTests(unittest.TestCase):
         self.assertEqual([call.args[1] for call in upload.call_args_list], [*self.files, self.manifest])
         self.assertEqual([call.args[0] for call in verify.call_args_list], [*self.files, self.manifest])
         self.assertEqual(request.call_args_list[0].kwargs["data"]["prerelease"], "false")
+        self.assertEqual(request.call_args_list[0].kwargs["data"]["name"], "湘少英语三上点读 v1.4.0")
         self.assertEqual(request.call_args_list[-1].args, ("GET", f"/repos/{publisher.REPOSITORY}/releases/latest"))
         self.assertEqual(result["id"], 8)
+
+    def test_new_app_name_is_published_from_the_versioned_notes_heading(self):
+        notes = "# 小学英语点读 v1.5.0\n\n中文说明"
+        self.release.update(tag_name="v1.5.0", name="小学英语点读 v1.5.0", body=notes)
+        _, request, _, _ = self.publish(notes=notes)
+        self.assertEqual(request.call_args_list[0].kwargs["data"]["name"], "小学英语点读 v1.5.0")
+
+    def test_historical_heading_reuses_the_original_published_title(self):
+        notes = "# 湘少英语三上点读 v1.4.0\n\n中文说明"
+        existing = {**self.release, "body": notes}
+        _, request, upload, _ = self.publish(existing, [self.asset(file) for file in [*self.files, self.manifest]],
+                                            notes=notes)
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(request.call_args.args[0], "GET")
+        upload.assert_not_called()
 
     def test_rerun_reuses_immutable_release_and_verifies_existing_bytes(self):
         _, request, upload, verify = self.publish(self.release, [self.asset(file) for file in [*self.files, self.manifest]])
@@ -281,8 +297,9 @@ class GiteePublishTests(unittest.TestCase):
         self.assertEqual(request.call_count, 1)
         self.assertEqual(verify.call_count, 3)
 
-    def test_different_notes_tag_commit_and_prerelease_are_never_overwritten(self):
+    def test_different_notes_title_tag_commit_and_prerelease_are_never_overwritten(self):
         for changes in ({"body": "changed"}, {"target_commitish": "b" * 40},
+                        {"name": "小学英语点读 v1.4.0"},
                         {"tag_name": "v1.3.0"}, {"prerelease": True}):
             with self.subTest(changes=changes), self.assertRaises(RuntimeError):
                 self.publish({**self.release, **changes})

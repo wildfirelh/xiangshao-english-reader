@@ -1,5 +1,5 @@
 name: english_point_reading
-description: An English textbook point-reading app.
+description: A primary-school English library with offline textbook point reading.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.4.0+5
+version: 1.5.0+6
 
 environment:
   sdk: ^3.13.5
@@ -58,6 +58,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    - assets/textbooks/catalog.json
     - assets/textbooks/xiangshao_3_1/
     - assets/textbooks/xiangshao_3_1/images/
     - assets/textbooks/xiangshao_3_1/audios/

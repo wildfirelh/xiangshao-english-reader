@@ -16,6 +16,27 @@ if TOOLS not in sys.path:
 import publish_github_release as publisher
 
 
+class ReleaseTitleTests(unittest.TestCase):
+    def test_versioned_first_heading_preserves_the_release_app_name(self):
+        for tag, name in (("v1.2.0", "湘少英语三上点读"),
+                          ("v1.4.0", "湘少英语三上点读"),
+                          ("v1.5.0", "小学英语点读")):
+            with self.subTest(tag=tag):
+                self.assertEqual(publisher.release_title(tag, f"# {name} {tag}\n\n中文说明"),
+                                 f"{name} {tag}")
+
+    def test_notes_without_a_first_heading_keep_the_legacy_title(self):
+        for notes in ("中文说明", "", "中文说明\n# 小学英语点读 v1.5.0"):
+            with self.subTest(notes=notes):
+                self.assertEqual(publisher.release_title("v1.5.0", notes),
+                                 "湘少英语三上点读 v1.5.0")
+
+    def test_heading_with_missing_name_or_wrong_version_is_rejected(self):
+        for notes in ("# 小学英语点读 v1.4.0", "# v1.5.0", "# 小学英语点读"):
+            with self.subTest(notes=notes), self.assertRaises(ValueError):
+                publisher.release_title("v1.5.0", notes)
+
+
 class GitHubRepositoryTests(unittest.TestCase):
     def setUp(self):
         self.client = publisher.GitHubRelease("test-token")
@@ -164,7 +185,7 @@ class GitHubReleaseTests(unittest.TestCase):
         self.release = {"id": 7, "tag_name": "v1.2.0", "name": "湘少英语三上点读 v1.2.0",
                         "target_commitish": self.commit, "body": "中文说明", "draft": True, "prerelease": False}
 
-    def publish(self, *, existing=None, assets=()):
+    def publish(self, *, existing=None, assets=(), notes="中文说明"):
         final = {**self.release, "draft": False}
         with patch.object(self.client, "ensure_repository"), \
              patch.object(self.client, "release", return_value=existing), \
@@ -173,7 +194,7 @@ class GitHubReleaseTests(unittest.TestCase):
                  list(assets), [{"name": file.name, "refreshed": True} for file in self.files]]), \
              patch.object(self.client, "upload", side_effect=lambda repo, release, file: {"name": file.name}) as upload, \
              patch.object(self.client, "verify_download") as verify:
-            result = self.client.publish(self.repo, "v1.2.0", self.commit, "中文说明", self.files)
+            result = self.client.publish(self.repo, self.release["tag_name"], self.commit, notes, self.files)
         return result, request, upload, verify
 
     def test_draft_verified_before_publication_and_anonymous_after(self):
@@ -182,11 +203,31 @@ class GitHubReleaseTests(unittest.TestCase):
         self.assertEqual(upload.call_count, 2)
         self.assertTrue(request.call_args_list[0].kwargs["json"]["draft"])
         self.assertEqual(request.call_args_list[0].kwargs["json"]["target_commitish"], self.commit)
+        self.assertEqual(request.call_args_list[0].kwargs["json"]["name"], "湘少英语三上点读 v1.2.0")
         self.assertEqual(request.call_args_list[-1].kwargs["json"],
                          {"draft": False, "prerelease": False, "make_latest": "true"})
         self.assertEqual([call.kwargs["anonymous"] for call in verify.call_args_list], [False, False, True, True])
         self.assertTrue(all(call.args[1].get("refreshed") for call in verify.call_args_list[2:]))
         self.assertTrue(all(not call.args[1].get("refreshed") for call in verify.call_args_list[:2]))
+
+    def test_new_app_name_is_published_from_the_versioned_notes_heading(self):
+        self.apk = self.apk.with_name("xiangshao-english-reader-v1.5.0-build6-arm64-v8a.apk")
+        self.apk.write_bytes(b"mock apk")
+        self.checksum = self.apk.with_suffix(".apk.sha256")
+        self.checksum.write_text(hashlib.sha256(self.apk.read_bytes()).hexdigest())
+        self.files = [self.apk, self.checksum]
+        notes = "# 小学英语点读 v1.5.0\n\n中文说明"
+        self.release.update(tag_name="v1.5.0", name="小学英语点读 v1.5.0", body=notes)
+        _, request, _, _ = self.publish(notes=notes)
+        self.assertEqual(request.call_args_list[0].kwargs["json"]["name"], "小学英语点读 v1.5.0")
+
+    def test_historical_heading_reuses_the_original_published_title(self):
+        notes = "# 湘少英语三上点读 v1.2.0\n\n中文说明"
+        existing = {**self.release, "body": notes, "draft": False}
+        _, request, upload, _ = self.publish(existing=existing, assets=[{"name": f.name} for f in self.files],
+                                            notes=notes)
+        request.assert_not_called()
+        upload.assert_not_called()
 
     def test_published_release_reused_without_upload_or_patch(self):
         existing = {**self.release, "draft": False}
@@ -197,7 +238,8 @@ class GitHubReleaseTests(unittest.TestCase):
         self.assertTrue(all(call.kwargs["anonymous"] for call in verify.call_args_list))
 
     def test_existing_release_content_mismatch_never_clobbered(self):
-        for changes in ({"body": "changed"}, {"target_commitish": "b" * 40}, {"prerelease": True}):
+        for changes in ({"body": "changed"}, {"name": "小学英语点读 v1.2.0"},
+                        {"target_commitish": "b" * 40}, {"prerelease": True}):
             with self.subTest(changes=changes), \
                  patch.object(self.client, "ensure_repository"), \
                  patch.object(self.client, "release", return_value={**self.release, **changes}), \

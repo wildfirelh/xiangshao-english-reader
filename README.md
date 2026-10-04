@@ -1,16 +1,38 @@
-# 英语点读
+# 小学英语点读
 
-Flutter 项目，已实现教材 JSON 解析、Asset 加载、单句点读、整气泡连读、单元目录与阅读进度保存，并预留口语评测接口。资源构建默认覆盖 Unit 1–10 所在正文：PDF 第 8–72 页（65 页，含复习、评价页），生成高清图片、英文热区、中文机器翻译，以及单句和整气泡两种离线 MP3。资源缺失时仍保留灰色示例页兜底。
+Flutter 多教材点读应用。主入口为“书本 / 我的”双 Tab，采用悬浮胶囊导航；书架根据本地教材清单显示封面、年级筛选和独立阅读进度，点击后才加载该教材的阅读器。保留单句点读、整气泡连读、单元目录、六档语速、通知降音与应用内更新，并预留口语评测接口。
+
+`v1.5.0` 发布多教材架构与主界面重构，应用正式更名为“小学英语点读”。
+
+湘少版三上资源包含 PDF 第 8–72 页（65 页，含复习、评价页），以及高清图片、英文热区、中文译文和单句／气泡离线 MP3。湘少版三下已列入书架，标记为“准备中”。
+
+## 多教材扩展
+
+`assets/textbooks/catalog.json` 管理教材元数据。`TextbookCatalogRepository` 先读取小型清单，打开已上线教材时才加载并缓存完整 `book.json`；加载失败可重试。目录、封面、正文路径和页面范围都从清单读取，主入口无需按教材 ID 添加分支。
+
+| 字段 | 用途 |
+| --- | --- |
+| `id`、`title`、`grade`、`term` | 教材身份、书架标题、年级与上下册 |
+| `cover`、`ready`、`totalUnits` | 本地封面路径、是否上线、单元数量 |
+| `manifestPath` | 可选正文路径；默认为 `assets/textbooks/{id}/book.json` |
+| `firstPageIndex`、`pageCount` | 可选正文范围，用于加载正文前显示阅读位置百分比 |
+| `units` | 单元 `number`、`title`、`startPage`；页码对应正文物理 PDF 页码 |
+
+新增教材时，将正文、图片和音频放入对应 assets 目录，在 `pubspec.yaml` 声明该教材及图片／音频目录，再向清单添加元数据并设置 `ready: true`。尚未准备好的教材仅添加 `ready: false` 元数据，不要求正文资源。已读取正文后，书架以实际页面列表核对进度；不同教材沿用 `last_read_page_index.<bookId>` 独立保存，返回书架会刷新进度与语速。阅读器继续支持旧目录调用方式，新入口明确传入清单中的单元数据。
+
+“我的”使用本地学习记录：音频在原生播放器实际开始后才累计当天和书籍，同一天／同一本去重；打开书籍、翻页或资源加载失败不增加计数。统计与护眼开关保存为 `learning_preferences_v1`，语速沿用现有 `playback_speed`。开启护眼提醒后，在阅读器前台每 20 分钟提示休息，后台与退出阅读器会取消计时。关于页读取实际安装版本，并分别说明应用代码与教材资源的版权范围。
 
 ## 下载与开源
 
-- [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.4.0/xiangshao-english-reader-v1.4.0-build5-arm64-v8a.apk)
-- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0)
+- [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.5.0/xiangshao-english-reader-v1.5.0-build6-arm64-v8a.apk)
+- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.5.0)
 - [AtomGit：历史版本下载](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
 
 后续版本在 GitHub 和码云发布，每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。AtomGit 保留历史版本，停止新增发布。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
 
-当前版本为 `1.4.0+5`，增加通知降音、六档持久化倍速和码云应用内更新。首次从旧版升级需要下载本版 APK 覆盖安装；此后可从书架“检查更新”直接下载并安装后续版本，详见 [版本说明](releases/v1.4.0.md)。
+应用仅在用户明确要求发布时上传正式新版本。日常更新先完成开发、测试并汇总待发布内容；源码提交或同步不自动触发 APK 发布。
+
+当前版本为 `1.5.0+6`，新增多教材清单、书架网格、悬浮导航与学习统计／护眼设置。已有正式版可直接覆盖安装，保留教材阅读进度和语速偏好；`1.4.0` 可使用原有“检查更新”升级。本版更新入口位于“我的”，详见 [版本说明](releases/v1.5.0.md)。
 
 单句资源包含 65 张正文图片、1,185 个点读条目和 MP3，722 条不同英文内容的翻译全部成功，清单没有空译文。单句音频通过豆包语音合成模型 2.0 的 V3 HTTP SSE API 生成，采用下表指定的六类固定角色音色；779 组不同的文本与音色参数复用于 1,185 个点读音频文件。旧音频已移至本地 `.asset-cache/previous-audio/`，不参与 Flutter 打包。六类角色的联网短句试音保留在 `build/tts-check/`。
 
@@ -253,11 +275,11 @@ flutter analyze
 flutter test
 ```
 
-本版验证：112 项 Python 测试、80 项 Flutter 测试通过，`flutter analyze` 无问题。Unit 1（PDF 第 8–11 页）验证包含 63 个单句、54 个气泡，新增 9 个完整气泡 MP3、8 组新的合成配置；全书生成保留 65 页正文。
+本版验证：148 项 Python 测试、229 项 Flutter 测试通过，`flutter analyze` 无问题；覆盖多教材清单、按需加载、独立进度、悬浮导航、学习统计、设置持久化及原有播放／更新流程。全书保留 65 页正文、1,185 个单句与 1,137 个气泡。
 
 ## Android 发布构建
 
-应用显示名称为“湘少英语三上点读”，版本为 `1.3.0+4`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
+应用显示名称为“小学英语点读”，版本为 `1.5.0+6`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
 
 ```powershell
 py -3.13 tools/prepare_launcher_icon.py
@@ -269,11 +291,13 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 
 新工作环境应恢复上述签名文件。仅在首次创建发布身份且两个文件均不存在时，可使用 `py -3.13 tools/create_release_signing.py --keytool <JDK目录>/bin/keytool.exe`；脚本使用随机密码且不在终端打印密码。
 
-本次 `1.3.0` 的交付文件为 `build/releases/v1.3.0/xiangshao-english-reader-v1.3.0-build4-arm64-v8a.apk`，ARM64 分包 versionCode 为 `2004`。大小：**41.73 MiB（43,755,366 字节）**；SHA-256：**`8e3be1495c82210bb9e74bfcbf3c000ed88e0a0da7dd1129e4d01d23fef30123`**。安装包资产及签名检查：**ARM64 正式 APK 的教材清单、1,228 个 MP3 和 66 张 WebP 与源文件逐字节一致，正式签名与上一版一致；私有配置、凭据和密钥未打包**。
+本次 `1.5.0` 的交付文件为 `build/releases/v1.5.0/xiangshao-english-reader-v1.5.0-build6-arm64-v8a.apk`，ARM64 分包 versionCode 为 `2006`。大小：**42.50 MiB（44,560,275 字节）**；SHA-256：**`71df70f4dd10c7a7cf4ef7de18a592d5af982e38f1923d3e9f58c0db5e126d0f`**。保留原正式签名、教材清单与离线资源；私有配置、凭据和密钥不参与打包。
 
 上述全架构构建命令还会生成 `app-armeabi-v7a-release.apk`（32 位 ARM）和 `app-x86_64-release.apk`（x86_64）。这些是签名后的 Release 安装包，尚未上传应用商店。现有调试版与发布版签名不同，不能直接覆盖安装；需先备份所需数据再卸载调试版，卸载会清除其阅读进度。
 
-## 版本归档与 AtomGit、GitHub 发布
+## 版本归档与 GitHub、码云发布
+
+以下正式发布步骤仅在收到用户当前批次的明确发布指令后执行。
 
 每次 App 或教材资源更新都递增 `pubspec.yaml` 的版本和构建号，更新 [CHANGELOG.md](CHANGELOG.md)，并在 `releases/v{版本}.md` 写中文功能说明。交付 APK 的文件名包含版本、构建号和架构。
 
@@ -304,7 +328,7 @@ Gitee 的 `update.json` 作为应用内更新渠道。码云网页的部分下�
 
 公开发布必须核对 GitHub 和码云的源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载 APK 比较 SHA-256；另核对 Gitee 最新版本 API 与更新清单。只有验证通过，才将该版本视为同步与公开发布完成。
 
-当前应用版本与说明为 [v1.4.0](releases/v1.4.0.md)，下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)、[GitHub v1.4.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0) 和 [Gitee Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.4.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
+当前应用版本与说明为 [v1.5.0](releases/v1.5.0.md)，下载入口为 [GitHub v1.5.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.5.0) 和 [Gitee v1.5.0 Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases/v1.5.0)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.5.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 
 ## 系统音频中断
 
@@ -314,9 +338,9 @@ Gitee 的 `update.json` 作为应用内更新渠道。码云网页的部分下�
 
 ## 应用内更新
 
-书架启动时在后台检查 Gitee 最新正式 Release，成功检查后 24 小时内不重复自动请求；“检查更新”按钮支持随时手动检查。无网络或没有新版时，自动检查不打断阅读。发现新版后展示实际新增功能，用户确认后在应用内下载，显示进度并支持取消；取消或失败的临时文件会清理，完整且有效的缓存可复用。
+主界面启动时在后台检查 Gitee 最新正式 Release，成功检查后 24 小时内不重复自动请求；“我的”中的“检查更新”按钮支持随时手动检查。无网络或没有新版时，自动检查不打断阅读。发现新版后展示实际新增功能，用户确认后在应用内下载，显示进度并支持取消；取消或失败的临时文件会清理，完整且有效的缓存可复用。
 
-安装包下载到 App 私有缓存目录，核对字节数、SHA-256、包名、架构、递增版本和当前应用的签名身份后，调用 Android 系统安装器。Android 8 及以上首次安装更新时，需要在系统设置允许“湘少英语三上点读”安装应用；返回后继续安装。Internet 权限为普通安装权限，不显示运行时授权弹窗；不申请广泛存储权限。取消系统安装后可重试。覆盖安装保留原有阅读进度和倍速偏好。
+安装包下载到 App 私有缓存目录，核对字节数、SHA-256、包名、架构、递增版本和当前应用的签名身份后，调用 Android 系统安装器。Android 8 及以上首次安装更新时，需要在系统设置允许“小学英语点读”安装应用；返回后继续安装。Internet 权限为普通安装权限，不显示运行时授权弹窗；不申请广泛存储权限。取消系统安装后可重试。覆盖安装保留原有阅读进度和倍速偏好。
 
 发布新增命令：
 
@@ -324,6 +348,6 @@ Gitee 的 `update.json` 作为应用内更新渠道。码云网页的部分下�
 py -3.13 tools/publish_gitee_release.py
 ```
 
-该命令同步同仓 `main` 和原有 annotated 标签，归档三个 ABI 安装包、上传并匿名完整下载核对每个 APK，最后上传 `update.json`，避免更新器看到未就绪的包。更新清单使用规范构建号 `5` 比较版本，分包 versionCode 分别为 `1005 / 2005 / 4005`。可通过 `--abi` 限定发布架构，或 `--prepare-only` 仅准备本地归档；归档与版本说明确定后不覆盖已有正式内容。
+该命令同步同仓 `main` 和原有 annotated 标签，归档三个 ABI 安装包、上传并匿名完整下载核对每个 APK，最后上传 `update.json`，避免更新器看到未就绪的包。更新清单使用规范构建号 `6` 比较版本，分包 versionCode 分别为 `1006 / 2006 / 4006`。可通过 `--abi` 限定发布架构，或 `--prepare-only` 仅准备本地归档；归档与版本说明确定后不覆盖已有正式内容。
 
 配置参考：[Flutter Android 发布指南](https://docs.flutter.dev/deployment/android)、[audio_session 文档](https://pub.dev/packages/audio_session/versions/0.1.25)、[flutter_launcher_icons 文档](https://pub.dev/packages/flutter_launcher_icons)。

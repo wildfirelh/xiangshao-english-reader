@@ -138,6 +138,8 @@ class AudioPlayerService extends ChangeNotifier {
   int _requestId = 0;
   int? _activePlaybackRequest;
   int? _observedPlayingRequest;
+  int? _reportedStartRequest;
+  final _playbackStarts = StreamController<void>.broadcast(sync: true);
   Future<void> _pendingLoad = Future<void>.value();
   bool _disposed = false;
 
@@ -148,6 +150,9 @@ class AudioPlayerService extends ChangeNotifier {
   PlayMode get currentMode => _currentMode;
   double get currentSpeed => _currentSpeed;
   Stream<PagePlaybackCompletion> get pageCompletions => _pageCompletions.stream;
+
+  /// Emitted once per asset only after native playback reaches the ready state.
+  Stream<void> get playbackStarts => _playbackStarts.stream;
 
   bool canContinue(PagePlaybackCompletion completion) =>
       !_disposed &&
@@ -511,6 +516,14 @@ class AudioPlayerService extends ChangeNotifier {
   void _onPlayerState(PlayerState state) {
     if (_disposed) return;
     if (state.processingState != ProcessingState.completed) {
+      if (state.playing &&
+          state.processingState == ProcessingState.ready &&
+          _isForeground &&
+          _activePlaybackRequest == _requestId &&
+          _reportedStartRequest != _requestId) {
+        _reportedStartRequest = _requestId;
+        _playbackStarts.add(null);
+      }
       if (state.playing && _activePlaybackRequest == _requestId) {
         _observedPlayingRequest = _requestId;
       }
@@ -592,6 +605,7 @@ class AudioPlayerService extends ChangeNotifier {
     _ducked = false;
     _volumeBeforeDuck = null;
     unawaited(_pageCompletions.close());
+    unawaited(_playbackStarts.close());
     unawaited(_stateSubscription.cancel());
     unawaited(_interruptionSubscription?.cancel());
     unawaited(_interruptions?.dispose());
