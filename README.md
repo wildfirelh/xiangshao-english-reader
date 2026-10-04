@@ -1,15 +1,17 @@
 # 英语点读
 
-Flutter 项目，已实现教材 JSON 解析、Asset 加载、口语评测接口、点读音频调度、单元目录与阅读进度保存。资源构建默认覆盖 Unit 1–10 所在正文：PDF 第 8–72 页（65 页，含复习、评价页），生成高清图片、英文热区、中文机器翻译和离线 MP3。资源缺失时仍保留灰色示例页兜底。
+Flutter 项目，已实现教材 JSON 解析、Asset 加载、单句点读、整气泡连读、单元目录与阅读进度保存，并预留口语评测接口。资源构建默认覆盖 Unit 1–10 所在正文：PDF 第 8–72 页（65 页，含复习、评价页），生成高清图片、英文热区、中文机器翻译，以及单句和整气泡两种离线 MP3。资源缺失时仍保留灰色示例页兜底。
 
 ## 下载与开源
 
-- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.2.0)
+- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.3.0)
 - [AtomGit：下载 APK 与查看版本更新](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
 
 每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
 
-当前随项目提供的正文资源包含 65 张图片、1,185 个点读条目和 MP3，722 条不同英文内容的翻译全部成功，清单没有空译文。全书音频已通过豆包语音合成模型 2.0 的 V3 HTTP SSE API 重新生成，采用下表指定的六类固定角色音色；779 组不同的文本与音色参数复用于 1,185 个点读音频文件。旧音频已移至本地 `.asset-cache/previous-audio/`，不参与 Flutter 打包。六类角色的联网短句试音保留在 `build/tts-check/`。
+单句资源包含 65 张正文图片、1,185 个点读条目和 MP3，722 条不同英文内容的翻译全部成功，清单没有空译文。单句音频通过豆包语音合成模型 2.0 的 V3 HTTP SSE API 生成，采用下表指定的六类固定角色音色；779 组不同的文本与音色参数复用于 1,185 个点读音频文件。旧音频已移至本地 `.asset-cache/previous-audio/`，不参与 Flutter 打包。六类角色的联网短句试音保留在 `build/tts-check/`。
+
+`1.3.0+4` 新增整气泡音频轨道：全书 65 页包含 1,137 个气泡，其中 43 个包含多个小句；共 1,228 个 MP3，包括原有 1,185 个单句文件和 43 个多句气泡文件。整段音频新增 42 组合成配置，另 1 组复用已有缓存；仅有一个小句的气泡直接引用对应单句文件。全书音频已逐一核对缓存 SHA-256，清单没有缺失译文，原有单句的文字、译文、热区和音频路径保持稳定。
 
 ## 从 PDF 构建资源
 
@@ -63,12 +65,13 @@ py -3.13 tools/build_textbook_assets.py assets/textbook.pdf --start-page 8 --end
 py -3.13 tools/build_textbook_assets.py assets/textbook.pdf --reuse-images
 ```
 
-每次构建会以所选页面替换目标目录的 `book.json`，不会自动追加。请勿把 `--pages 8-11` 直接用于正式目录，否则正式清单将只剩这四页。预览资源如需进入 Flutter，需要额外在 `pubspec.yaml` 中声明预览目录并切换读取路径。
+当目标目录已有相同 `bookId` 的清单时，构建只更新本次选择的页面，并合并保留其他页的图片、译文和音频引用；例如在正式目录运行 `--pages 8-11` 不会删掉其余正文页。没有旧清单或 `bookId` 不同时，生成的清单只包含所选范围。上方独立预览目录适合检查资源；如需让预览进入 Flutter，需要在 `pubspec.yaml` 中声明预览目录并切换读取路径。
 
 脚本默认输出 `assets/textbooks/xiangshao_3_1/`，图片为 200 DPI WebP（quality=85，保留像素尺寸），人物使用配置的固定 `speaker`。可用 `--image-format png` 导出 PNG。另从 PDF 第 1 页提取正面封面为 `images/cover.webp`；当前 PDF 的封面是横向展开图，因此取右侧正面。不传 PDF 路径时依次查找项目根目录的 `textbook.pdf`、`assets/textbook.pdf`。`asyncio` 已内置于 Python，无需额外安装；HTTP 合成使用 `requests`，不需要 Edge-TTS、WebSocket 协议库或额外 SSE SDK。
 
-- `--pages 8-11,13` 可指定不连续页码，与 `--start-page` / `--end-page` 互斥。使用 PDF 的物理页码，从 1 开始；`pageIndex` 也保存物理页码。每次生成的 `book.json` 只包含本次选择的页面，并替换旧清单；旧清单引用但新清单不再使用的音频移至 `.asset-cache/previous-audio/` 备份。
+- `--pages 8-11,13` 可指定不连续页码，与 `--start-page` / `--end-page` 互斥。使用 PDF 的物理页码，从 1 开始；`pageIndex` 也保存物理页码。同一教材的局部生成会按页码合并旧清单并排序，只有合并后不再引用的旧音频才移至 `.asset-cache/previous-audio/` 备份，不移动保留页的单句或气泡音频。
 - 英文按标点分句，结合对齐和间距合并换行；过滤无英文字母的内容。数字页码不会生成音频，英文标题、词汇和字母仍可点读。旋转页的热区会转换到渲染图片坐标系。
+- 在单句热区之外，根据 PDF 文本块、行距与列对齐聚合同一气泡，支持人工校对气泡归属；当前结合已有场景、人物标注聚类，不同场景或说话人不合并。气泡内文本按阅读顺序合成一次完整音频，单句音频仍独立保留。一句的气泡直接复用对应单句 MP3，多句气泡通过相同的参数指纹机制缓存整段音频。
 - 这是基于文本层的几何提取，不包含 OCR。扫描页会输出图片并给出无英文文本的警告；若所选页面全部无英文，构建失败并保留旧清单。图片中没有文本层的文字不会自动变成热区。曲谱、复杂表格和特殊排版需人工校对。
 - 火山引擎**构建时需要联网**，生成的 MP3 可在 App 中离线播放。向 V3 `/api/v3/tts/unidirectional/sse` 一次性发送句子，接收 SSE 音频包，逐包 Base64 解码并拼接为 **24kHz / 64kbps MP3**。仅收到明确的成功结束码 `20000000` 且音频有效后，才写入成功缓存；HTTP 200、收到部分音频或连接自行关闭均不能表示合成完成。默认最多 3 个并发请求、每条最多尝试 3 次、HTTP 超时 60 秒；网络故障、并发限流和指定服务异常会重试，鉴权或参数错误立即失败。支持 `--proxy http://127.0.0.1:端口`。
 - 音频按文字、`speaker`、语速、音调、接口、模型资源 ID 和编码参数的 SHA-256 指纹缓存到 `.asset-cache/speech-volc-http-v3-doubao2/`，并校验 MP3 内容哈希；同一合成配置只请求一次。该缓存与 V1 和旧引擎隔离，不会把已有旧音频当作豆包 2.0 合成结果。修改声音参数会自动生成新资源，`--refresh-audio` 可强制重新下载。音频路径包含指纹，缓存与清单不保存实际凭据。
@@ -86,7 +89,7 @@ py -3.13 -m unittest tools.test_build_textbook_assets -v
 
 ### 场景顺序与人物声线
 
-先识别漫画中的连续数字序号，将同一场景的句子放在一起，再按“提问／发起对话 → 应答 → 致谢告别”排序；同优先级按上到下、左到右排列。曲谱重复数字和练习编号不会直接作为漫画序号。句子 ID、文字和热区保持稳定，朗读次序只改变清单中的数组顺序。
+先识别漫画中的连续数字序号，保证一个场景读完才进入下一场景。整页连读以气泡为单位，在同一场景内按气泡从上到下、结合列归属排序，气泡内按原文阅读顺序合并为完整段落。单句清单保留既有“提问／发起对话 → 应答 → 致谢告别”的语境校对。曲谱重复数字和练习编号不会直接作为漫画序号；句子 ID、文字和热区保持稳定。
 
 `tools/textbook_context/xiangshao_3_1.json` 保存本版教材的 367 条已核对角色标注，以及无序号插图和跨框气泡的场景补充。标注受 PDF 哈希及原句、坐标校验保护，不会套用到其他版本。自动识别支持说话人标签、自我介绍和明确的两人场景；无法确认的词汇、标题与练习使用旁白，称呼中的人名不会直接被当成说话人。
 
@@ -135,8 +138,10 @@ py -3.13 -m unittest tools.test_compress_images_to_webp -v
 
 ### 点读控制
 
+- 点按页面上的句子热区，立即以**单句点读**播放对应小句；不论正在连读、加载气泡音频、暂停，还是自动翻页，手动点读都会取消连续调度并将底栏同步改为“单句点读”。该小句读完停止，不自动播放下一句或跨页。
+- 点击底栏“单句点读”按钮切为**整页连读**并开始播放完整气泡；已有选中句时从它所在的气泡开始，否则从当前页第一个气泡开始。同一气泡的多句文本使用一条整段音频，连读时高亮整个气泡，并显示整段释义。点击气泡内两行之间的空白，也可打断连读并点读该气泡的首个小句；精确句子热区优先。
 - 底栏语速按钮在 `1.0x`（标准）与 `0.8x 慢速` 间切换，立即调整正在播放的音频，并对后续句子和跨页连读生效；速度保留至本次阅读器关闭，不重新生成 MP3。
-- 连读结束一页后，会平滑翻至下一页并播放第一句；没有英文句子的页面会跳过，全书最后一句后停止。自动翻页期间手动点读、翻页或切回单句模式会取消待执行的自动播放。
+- 连读结束一页后，会平滑翻至下一页并播放第一个气泡；没有英文气泡的页面会跳过，全书最后一个气泡后停止。手动翻页或切回单句模式也会取消待执行的自动播放。
 - 高亮使用 22% 不透明度的黄色荧光笔底色、4dp 圆角和 180ms 淡入，完全移除描边；系统启用“减少动态效果”时取消动画。窄屏和大字号下控制栏自动换行。
 
 ### 人名译文校正
@@ -178,15 +183,34 @@ py -3.13 -m unittest tools.test_patch_translations tools.test_build_textbook_ass
   "title": "湘少版英语三年级上册",
   "pages": [
     {
-      "pageIndex": 1,
-      "imagePath": "assets/textbooks/xiangshao_3_1/images/p1.webp",
+      "pageIndex": 8,
+      "imagePath": "assets/textbooks/xiangshao_3_1/images/page_008.webp",
       "sentences": [
         {
           "id": "p1_s1",
+          "bubbleId": "p1_b1",
           "text": "Hello!",
           "translation": "你好！",
           "audioPath": "assets/textbooks/xiangshao_3_1/audios/p1_s1.mp3",
           "rect": { "left": 0.1, "top": 0.2, "right": 0.5, "bottom": 0.3 }
+        },
+        {
+          "id": "p1_s2",
+          "bubbleId": "p1_b1",
+          "text": "My name is Lingling.",
+          "translation": "我叫玲玲。",
+          "audioPath": "assets/textbooks/xiangshao_3_1/audios/p1_s2.mp3",
+          "rect": { "left": 0.1, "top": 0.32, "right": 0.7, "bottom": 0.4 }
+        }
+      ],
+      "bubbles": [
+        {
+          "id": "p1_b1",
+          "text": "Hello! My name is Lingling.",
+          "translation": "你好！我叫玲玲。",
+          "audioPath": "assets/textbooks/xiangshao_3_1/audios/p1_b1.mp3",
+          "rect": { "left": 0.1, "top": 0.2, "right": 0.7, "bottom": 0.4 },
+          "sentenceIds": ["p1_s1", "p1_s2"]
         }
       ]
     }
@@ -194,7 +218,7 @@ py -3.13 -m unittest tools.test_patch_translations tools.test_build_textbook_ass
 }
 ```
 
-`rect` 的四个值是相对于原始页面图片宽高的 0–1 坐标；左右、上下边界必须有序。`translation` 可省略。
+`rect` 的四个值是相对于原始页面图片宽高的 0–1 坐标；左右、上下边界必须有序。`translation` 可省略。`sentences` 保存独立点读条目，`bubbles` 保存整段音频与有序的 `sentenceIds` 引用；子句通过可选 `bubbleId` 标注归属。旧清单没有 `bubbles` 时，每个单句作为一个兼容气泡读取，不要求先重新生成资源。
 
 阅读页会按图片原始比例居中显示，并把热区映射到实际图片区域。图片缺失时显示灰色页面，音频缺失时点按会显示提示，页面仍可操作。底部栏提供单句点读／整页连读切换、释义开关和跟读评测占位入口。
 
@@ -206,7 +230,9 @@ final book = await TextbookRepository().loadBookFromAsset(
 );
 
 final audio = AudioPlayerService();
-audio.setPlayMode(PlayMode.continuous);
+// 整页连读：使用完整气泡音频，可指定 targetBubble 从选中的气泡开始。
+await audio.playPage(page: book.pages.first);
+// 手动单句点读：立即打断整页连读，并自动切换为 PlayMode.single。
 await audio.playSentence(
   pageSentences: book.pages.first.sentences,
   targetSentence: book.pages.first.sentences.first,
@@ -214,7 +240,7 @@ await audio.playSentence(
 // 页面销毁时调用 audio.dispose()。
 ```
 
-调用前需导入 `repositories/textbook_repository.dart` 和 `services/audio_player_service.dart`。界面可以监听 `AudioPlayerService` 的 `ChangeNotifier`，读取 `currentSentenceId`、`isPlaying` 和 `currentMode`。`MockSpeechEvaluator` 只返回占位结果，不进行录音或真实评分。
+调用前需导入 `repositories/textbook_repository.dart` 和 `services/audio_player_service.dart`。界面可以监听 `AudioPlayerService` 的 `ChangeNotifier`，读取 `currentSentenceId`、`currentBubbleId`、`isPlaying` 和 `currentMode`：单句播放高亮小句，连读播放高亮整气泡。`MockSpeechEvaluator` 只返回占位结果，不进行录音或真实评分。
 
 ## 验证
 
@@ -224,9 +250,11 @@ flutter analyze
 flutter test
 ```
 
+本版验证：112 项 Python 测试、80 项 Flutter 测试通过，`flutter analyze` 无问题。Unit 1（PDF 第 8–11 页）验证包含 63 个单句、54 个气泡，新增 9 个完整气泡 MP3、8 组新的合成配置；全书生成保留 65 页正文。
+
 ## Android 发布构建
 
-应用显示名称为“湘少英语三上点读”，版本为 `1.2.0+3`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
+应用显示名称为“湘少英语三上点读”，版本为 `1.3.0+4`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
 
 ```powershell
 py -3.13 tools/prepare_launcher_icon.py
@@ -238,7 +266,7 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 
 新工作环境应恢复上述签名文件。仅在首次创建发布身份且两个文件均不存在时，可使用 `py -3.13 tools/create_release_signing.py --keytool <JDK目录>/bin/keytool.exe`；脚本使用随机密码且不在终端打印密码。
 
-本次 `1.2.0` 的正式交付文件为 `build/releases/v1.2.0/xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk`（40.76 MiB，ARM64 分包 versionCode 为 2003），内含全书豆包 2.0 音频。签名与上一发布版一致，APK 内的清单、1,185 个 MP3 和 66 张 WebP（含封面）已逐一比对源文件。验证报告位于 `build/doubao2-release/release-verification.json`。
+本次 `1.3.0` 的交付文件为 `build/releases/v1.3.0/xiangshao-english-reader-v1.3.0-build4-arm64-v8a.apk`，ARM64 分包 versionCode 为 `2004`。大小：**41.73 MiB（43,755,366 字节）**；SHA-256：**`8e3be1495c82210bb9e74bfcbf3c000ed88e0a0da7dd1129e4d01d23fef30123`**。安装包资产及签名检查：**ARM64 正式 APK 的教材清单、1,228 个 MP3 和 66 张 WebP 与源文件逐字节一致，正式签名与上一版一致；私有配置、凭据和密钥未打包**。
 
 上述全架构构建命令还会生成 `app-armeabi-v7a-release.apk`（32 位 ARM）和 `app-x86_64-release.apk`（x86_64）。这些是签名后的 Release 安装包，尚未上传应用商店。现有调试版与发布版签名不同，不能直接覆盖安装；需先备份所需数据再卸载调试版，卸载会清除其阅读进度。
 
@@ -271,10 +299,10 @@ py -3.13 tools/publish_github_release.py
 
 公开发布必须核对两端源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载两端 APK 比较 SHA-256。只有两端匿名访问和下载校验均通过，才将该版本视为同步与公开发布完成。
 
-当前应用版本与说明为 [v1.2.0](releases/v1.2.0.md)，本次仓库合并沿用现有 `1.2.0+3` 安装包。迁移后的下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases) 与 [GitHub v1.2.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.2.0)。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
+当前应用版本与说明为 [v1.3.0](releases/v1.3.0.md)，下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases) 与 [GitHub v1.3.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.3.0)。发布脚本检查两端匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.3.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 
 ## 系统音频中断
 
-使用 `audio_session` 的 `speech` 配置，并由播放服务统一处理焦点丢失、临时中断、duck 请求和耳机拔出。进入 inactive / hidden / paused / detached 时也暂停，保留当前句子高亮与语速，并取消尚未完成的加载和跨页连读。回到前台或中断结束后保持暂停，点击热区或“重听”从该句开头继续。返回书架仍执行停止并清除选择。
+使用 `audio_session` 的 `speech` 配置，并由播放服务统一处理焦点丢失、临时中断、duck 请求和耳机拔出。进入 inactive / hidden / paused / detached 时也暂停，保留当前句子或气泡高亮与语速，并取消尚未完成的加载和跨页连读。回到前台或中断结束后保持暂停；点击热区进入单句点读，点击“重听”从所选小句或气泡开头重新播放。返回书架仍执行停止并清除选择。
 
 配置参考：[Flutter Android 发布指南](https://docs.flutter.dev/deployment/android)、[audio_session 文档](https://pub.dev/packages/audio_session/versions/0.1.25)、[flutter_launcher_icons 文档](https://pub.dev/packages/flutter_launcher_icons)。

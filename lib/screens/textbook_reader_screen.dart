@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../models/textbook.dart';
@@ -66,6 +67,12 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   StreamSubscription<PagePlaybackCompletion>? _completionSubscription;
   PagePlaybackCompletion? _autoCompletion;
   int? _autoTarget;
+  final _pageKeys = <int, GlobalKey<InteractiveTextbookPageState>>{};
+  bool _handledScrollingTap = false;
+  PointSentence? _scrollTapSentence;
+  int? _scrollTapPage;
+  int? _scrollTapPointer;
+  Offset? _scrollTapPosition;
 
   int _pageIndex = 0;
   bool _isTranslationEnabled = true;
@@ -132,6 +139,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   PointSentence? get _activeSentence {
+    if (_audio.currentBubbleId != null) return null;
     final id = _audio.currentSentenceId ?? _previewSentence?.id;
     if (id == null) return null;
     for (final sentence in _pages[_pageIndex].sentences) {
@@ -140,7 +148,17 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     return null;
   }
 
+  DialogueBubble? get _activeBubble {
+    final id = _audio.currentBubbleId;
+    if (id == null) return null;
+    for (final bubble in _pages[_pageIndex].playbackBubbles) {
+      if (bubble.id == id) return bubble;
+    }
+    return null;
+  }
+
   void _onPageChanged(int index) {
+    if (index == _pageIndex) return;
     final automatic =
         _autoTarget != null &&
         index >= _pageIndex &&
@@ -159,13 +177,24 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     unawaited(_saveProgress(index));
   }
 
-  Future<void> _onSentenceTap(PointSentence sentence) async {
-    _cancelAutoAdvance(settlePage: true);
-    final tappedPageIndex = _pageIndex;
+  Future<void> _onSentenceTap(PointSentence sentence, {int? pageIndex}) async {
+    // A deliberate page tap always wins over playback, loading and an animated
+    // automatic page turn. Apply the mode before any asynchronous work.
+    final tappedPageIndex = pageIndex ?? _pageIndex;
+    _audio.setPlayMode(PlayMode.single);
+    _cancelAutoAdvance();
+    if (_pageController?.hasClients == true) {
+      // Settle even an ordinary previous/next-page animation to the page whose
+      // hit region was tapped, before starting that page's sentence audio.
+      _pageController!.jumpToPage(tappedPageIndex);
+    }
+    final pageChanged = _pageIndex != tappedPageIndex;
     setState(() {
+      _pageIndex = tappedPageIndex;
       _previewSentence = null;
       _dismissedTranslationId = null;
     });
+    if (pageChanged) unawaited(_saveProgress(tappedPageIndex));
     if (sentence.audioPath.isEmpty) {
       unawaited(_audio.stop());
       setState(() => _previewSentence = sentence);
@@ -181,6 +210,54 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
       if (!mounted || _pageIndex != tappedPageIndex) return;
       setState(() => _previewSentence = sentence);
       _showAudioNotice();
+    }
+  }
+
+  void _onPagePointerDown(PointerDownEvent event) {
+    _handledScrollingTap = false;
+    _scrollTapSentence = null;
+    if (_pageController?.hasClients != true) return;
+    final position = _pageController!.position;
+    final page = _pageController!.page ?? _pageIndex.toDouble();
+    // Scrollable's own down handler may already have stopped the animation.
+    // A fractional page offset still identifies its ignored descendant tap.
+    if (!position.isScrollingNotifier.value &&
+        (page - page.round()).abs() < 0.0001) {
+      return;
+    }
+    // A driven PageView scroll ignores descendant taps. Intercept its visible
+    // sentence using the canvas's actual image geometry before settling the page.
+    for (final entry in _pageKeys.entries) {
+      final sentence = entry.value.currentState?.sentenceAtGlobalPosition(
+        event.position,
+      );
+      if (sentence != null) {
+        _handledScrollingTap = true;
+        _scrollTapSentence = sentence;
+        _scrollTapPage = entry.key;
+        _scrollTapPointer = event.pointer;
+        _scrollTapPosition = event.position;
+        return;
+      }
+    }
+  }
+
+  void _onPagePointerUp(PointerUpEvent event) {
+    final sentence = _scrollTapSentence;
+    if (sentence != null &&
+        event.pointer == _scrollTapPointer &&
+        (event.position - _scrollTapPosition!).distance <= kTouchSlop) {
+      unawaited(_onSentenceTap(sentence, pageIndex: _scrollTapPage));
+    }
+    _scrollTapSentence = null;
+    scheduleMicrotask(() => _handledScrollingTap = false);
+  }
+
+  void _onPagePointerMove(PointerMoveEvent event) {
+    if (_scrollTapSentence != null &&
+        event.pointer == _scrollTapPointer &&
+        (event.position - _scrollTapPosition!).distance > kTouchSlop) {
+      _scrollTapSentence = null;
     }
   }
 
@@ -211,9 +288,39 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     }
   }
 
-  void _setPlayMode(PlayMode mode) {
+  Future<void> _setPlayMode(PlayMode mode) async {
     _cancelAutoAdvance(settlePage: true);
-    _audio.setPlayMode(mode);
+    if (mode == PlayMode.single) {
+      _audio.setPlayMode(mode);
+      unawaited(_audio.stop());
+      return;
+    }
+    await _playContinuousPage();
+  }
+
+  Future<void> _playContinuousPage({DialogueBubble? targetBubble}) async {
+    final index = _pageIndex;
+    final page = _pages[index];
+    final selected = _activeSentence;
+    targetBubble ??= _activeBubble;
+    if (targetBubble == null && selected != null) {
+      for (final bubble in page.playbackBubbles) {
+        if (bubble.sentenceIds.contains(selected.id)) {
+          targetBubble = bubble;
+          break;
+        }
+      }
+    }
+    setState(() {
+      _previewSentence = null;
+      _dismissedTranslationId = null;
+    });
+    try {
+      await _audio.playPage(page: page, targetBubble: targetBubble);
+    } catch (_) {
+      if (!mounted || _pageIndex != index) return;
+      _showAudioNotice();
+    }
   }
 
   Future<void> _setSpeed(double speed) async {
@@ -230,12 +337,14 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     if (!mounted ||
         _restoring ||
         !_audio.canContinue(completion) ||
-        _pages[_pageIndex].sentences.lastOrNull?.id != completion.sentenceId) {
+        completion.pageIndex != _pages[_pageIndex].pageIndex ||
+        completion.lastBubbleId !=
+            _pages[_pageIndex].playbackBubbles.lastOrNull?.id) {
       return;
     }
     var next = _pageIndex + 1;
-    // Image-only pages have no first sentence; continue at the next readable page.
-    while (next < _pages.length && _pages[next].sentences.isEmpty) {
+    // Image-only pages have no bubble; continue at the next readable page.
+    while (next < _pages.length && _pages[next].playbackBubbles.isEmpty) {
       next++;
     }
     if (next >= _pages.length || _pageController?.hasClients != true) return;
@@ -258,7 +367,9 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
         return;
       }
       _cancelAutoAdvance();
-      await _onSentenceTap(_pages[next].sentences.first);
+      await _playContinuousPage(
+        targetBubble: _pages[next].playbackBubbles.first,
+      );
     } finally {
       if (_autoCompletion == completion) _cancelAutoAdvance();
     }
@@ -278,6 +389,8 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   @override
   Widget build(BuildContext context) {
     final active = _activeSentence;
+    final activeBubble = _activeBubble;
+    final activeId = activeBubble?.id ?? active?.id;
     final colors = Theme.of(context).colorScheme;
     final units = TextbookUnit.forBook(widget.book.bookId);
     return PopScope<void>(
@@ -388,19 +501,45 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                           }
                           return false;
                         },
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: _pages.length,
-                          onPageChanged: _onPageChanged,
-                          itemBuilder: (context, index) => Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: InteractiveTextbookPage(
-                              key: ValueKey(index),
-                              page: _pages[index],
-                              activeSentenceId: index == _pageIndex
-                                  ? active?.id
-                                  : null,
-                              onSentenceTap: _onSentenceTap,
+                        child: Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: _onPagePointerDown,
+                          onPointerMove: _onPagePointerMove,
+                          onPointerUp: _onPagePointerUp,
+                          onPointerCancel: (_) {
+                            _scrollTapSentence = null;
+                            _handledScrollingTap = false;
+                          },
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: _pages.length,
+                            onPageChanged: _onPageChanged,
+                            itemBuilder: (context, index) => Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: InteractiveTextbookPage(
+                                key: _pageKeys.putIfAbsent(
+                                  index,
+                                  () =>
+                                      GlobalKey<InteractiveTextbookPageState>(),
+                                ),
+                                page: _pages[index],
+                                activeSentenceId: index == _pageIndex
+                                    ? active?.id
+                                    : null,
+                                activeBubbleId: index == _pageIndex
+                                    ? activeBubble?.id
+                                    : null,
+                                onSentenceTap: (sentence) {
+                                  if (!_handledScrollingTap) {
+                                    unawaited(
+                                      _onSentenceTap(
+                                        sentence,
+                                        pageIndex: index,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -445,9 +584,16 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
             setState(() => _isTranslationEnabled = value);
           },
           activeSentence: active?.id == _dismissedTranslationId ? null : active,
-          onReplay: active == null ? null : () => _onSentenceTap(active),
+          activeBubble: activeBubble?.id == _dismissedTranslationId
+              ? null
+              : activeBubble,
+          onReplay: activeBubble != null
+              ? () => _playContinuousPage(targetBubble: activeBubble)
+              : active == null
+              ? null
+              : () => _onSentenceTap(active),
           onDismissTranslation: () {
-            setState(() => _dismissedTranslationId = active?.id);
+            setState(() => _dismissedTranslationId = activeId);
           },
         ),
       ),

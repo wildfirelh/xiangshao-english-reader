@@ -18,24 +18,69 @@ class InteractiveTextbookPage extends StatefulWidget {
     required this.page,
     required this.activeSentenceId,
     required this.onSentenceTap,
+    this.activeBubbleId,
   });
 
   final TextbookPage page;
   final String? activeSentenceId;
+  final String? activeBubbleId;
   final ValueChanged<PointSentence> onSentenceTap;
 
   @override
   State<InteractiveTextbookPage> createState() =>
-      _InteractiveTextbookPageState();
+      InteractiveTextbookPageState();
 }
 
-class _InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
+class InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
   static const _placeholderSize = Size(3, 4);
 
   ImageStream? _imageStream;
   ImageStreamListener? _imageListener;
   Size _imageSize = _placeholderSize;
   bool _imageAvailable = false;
+
+  /// Uses the same hit geometry for a parent that interrupts PageView animation,
+  /// when Flutter temporarily ignores the page's own gesture detector.
+  PointSentence? sentenceAtGlobalPosition(Offset globalPosition) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return null;
+    return _sentenceAtLocalPosition(
+      box.globalToLocal(globalPosition),
+      box.size,
+    );
+  }
+
+  PointSentence? _sentenceAtLocalPosition(Offset touch, Size size) {
+    final renderRect = containedImageRect(size, _imageSize);
+    if (!renderRect.contains(touch)) return null;
+    final x = (touch.dx - renderRect.left) / renderRect.width;
+    final y = (touch.dy - renderRect.top) / renderRect.height;
+    for (final sentence in widget.page.sentences) {
+      final rect = sentence.rect;
+      if (x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom) {
+        return sentence;
+      }
+    }
+    // Precise sentence hot spots take priority; remaining bubble space selects
+    // its first child in reading order.
+    for (final bubble in widget.page.playbackBubbles) {
+      final rect = bubble.rect;
+      if (x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom) {
+        for (final id in bubble.sentenceIds) {
+          for (final sentence in widget.page.sentences) {
+            if (sentence.id == id) return sentence;
+          }
+        }
+      }
+    }
+    return null;
+  }
 
   @override
   void didChangeDependencies() {
@@ -109,31 +154,35 @@ class _InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
         return const SizedBox.shrink();
       }
       final renderRect = containedImageRect(size, _imageSize);
-      PointSentence? active;
-      for (final sentence in widget.page.sentences) {
-        if (sentence.id == widget.activeSentenceId) {
-          active = sentence;
+      NormalizedRect? activeRect;
+      String? activeId;
+      var isBubbleHighlight = false;
+      for (final bubble in widget.page.playbackBubbles) {
+        if (bubble.id == widget.activeBubbleId) {
+          activeRect = bubble.rect;
+          activeId = bubble.id;
+          isBubbleHighlight = true;
           break;
+        }
+      }
+      if (activeRect == null) {
+        for (final sentence in widget.page.sentences) {
+          if (sentence.id == widget.activeSentenceId) {
+            activeRect = sentence.rect;
+            activeId = sentence.id;
+            break;
+          }
         }
       }
 
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapUp: (details) {
-          final touch = details.localPosition;
-          if (!renderRect.contains(touch)) return;
-          final x = (touch.dx - renderRect.left) / renderRect.width;
-          final y = (touch.dy - renderRect.top) / renderRect.height;
-          for (final sentence in widget.page.sentences) {
-            final rect = sentence.rect;
-            if (x >= rect.left &&
-                x <= rect.right &&
-                y >= rect.top &&
-                y <= rect.bottom) {
-              widget.onSentenceTap(sentence);
-              return;
-            }
-          }
+          final sentence = _sentenceAtLocalPosition(
+            details.localPosition,
+            size,
+          );
+          if (sentence != null) widget.onSentenceTap(sentence);
         },
         child: Stack(
           children: [
@@ -143,17 +192,19 @@ class _InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
                   ? Image.asset(widget.page.imagePath, fit: BoxFit.contain)
                   : _PlaceholderPage(page: widget.page),
             ),
-            if (active != null)
+            if (activeRect != null)
               Positioned.fromRect(
                 rect: Rect.fromLTRB(
-                  renderRect.left + active.rect.left * renderRect.width,
-                  renderRect.top + active.rect.top * renderRect.height,
-                  renderRect.left + active.rect.right * renderRect.width,
-                  renderRect.top + active.rect.bottom * renderRect.height,
+                  renderRect.left + activeRect.left * renderRect.width,
+                  renderRect.top + activeRect.top * renderRect.height,
+                  renderRect.left + activeRect.right * renderRect.width,
+                  renderRect.top + activeRect.bottom * renderRect.height,
                 ),
                 child: IgnorePointer(
                   child: TweenAnimationBuilder<double>(
-                    key: ValueKey(active.id),
+                    key: ValueKey(
+                      '${isBubbleHighlight ? 'bubble' : 'sentence'}-$activeId',
+                    ),
                     tween: Tween(begin: 0, end: 1),
                     duration: MediaQuery.disableAnimationsOf(context)
                         ? Duration.zero
@@ -162,7 +213,11 @@ class _InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
                     builder: (context, opacity, child) =>
                         Opacity(opacity: opacity, child: child),
                     child: DecoratedBox(
-                      key: const Key('sentence-highlight'),
+                      key: Key(
+                        isBubbleHighlight
+                            ? 'bubble-highlight'
+                            : 'sentence-highlight',
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.yellow.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(4),

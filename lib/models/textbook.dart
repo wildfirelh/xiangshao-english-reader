@@ -23,17 +23,37 @@ class TextbookPage {
     required this.pageIndex,
     required this.imagePath,
     required this.sentences,
+    this.bubbles = const [],
   });
 
   final int pageIndex;
   final String imagePath;
   final List<PointSentence> sentences;
+  final List<DialogueBubble> bubbles;
+
+  /// Older books remain readable without requiring a resource rebuild.
+  List<DialogueBubble> get playbackBubbles => bubbles.isNotEmpty
+      ? bubbles
+      : [
+          for (final sentence in sentences)
+            DialogueBubble(
+              id: sentence.id,
+              text: sentence.text,
+              translation: sentence.translation,
+              audioPath: sentence.audioPath,
+              rect: sentence.rect,
+              sentenceIds: [sentence.id],
+            ),
+        ];
 
   factory TextbookPage.fromJson(Map<String, dynamic> json) => TextbookPage(
     pageIndex: json['pageIndex'] as int,
     imagePath: json['imagePath'] as String,
     sentences: (json['sentences'] as List<dynamic>)
         .map((item) => PointSentence.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    bubbles: (json['bubbles'] as List<dynamic>? ?? const [])
+        .map((item) => DialogueBubble.fromJson(item as Map<String, dynamic>))
         .toList(),
   );
 }
@@ -43,6 +63,7 @@ class PointSentence {
     required this.id,
     required this.text,
     this.translation,
+    this.bubbleId,
     required this.audioPath,
     required this.rect,
   });
@@ -50,6 +71,7 @@ class PointSentence {
   final String id;
   final String text;
   final String? translation;
+  final String? bubbleId;
   final String audioPath;
   final NormalizedRect rect;
 
@@ -57,8 +79,36 @@ class PointSentence {
     id: json['id'] as String,
     text: json['text'] as String,
     translation: json['translation'] as String?,
+    bubbleId: json['bubbleId'] as String?,
     audioPath: json['audioPath'] as String,
     rect: NormalizedRect.fromJson(json['rect'] as Map<String, dynamic>),
+  );
+}
+
+class DialogueBubble {
+  const DialogueBubble({
+    required this.id,
+    required this.text,
+    this.translation,
+    required this.audioPath,
+    required this.rect,
+    required this.sentenceIds,
+  });
+
+  final String id;
+  final String text;
+  final String? translation;
+  final String audioPath;
+  final NormalizedRect rect;
+  final List<String> sentenceIds;
+
+  factory DialogueBubble.fromJson(Map<String, dynamic> json) => DialogueBubble(
+    id: json['id'] as String,
+    text: json['text'] as String,
+    translation: json['translation'] as String?,
+    audioPath: json['audioPath'] as String,
+    rect: NormalizedRect.fromJson(json['rect'] as Map<String, dynamic>),
+    sentenceIds: (json['sentenceIds'] as List<dynamic>).cast<String>(),
   );
 }
 

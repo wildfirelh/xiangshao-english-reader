@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 
-import 'audio_player_service_test.dart' show FakeAudioBackend, sentences;
+import 'audio_player_service_test.dart'
+    show FakeAudioBackend, sentences, bubblePage, bubbles, legacyPage;
 import 'helpers/memory_reading_progress_store.dart';
 
 class FakeInterruptions implements AudioInterruptionSource {
@@ -36,16 +37,13 @@ void main() {
       interruptionSource: interruptions,
     );
     addTearDown(service.dispose);
-    service.setPlayMode(PlayMode.continuous);
     await service.setSpeed(.8);
-    await service.playSentence(
-      pageSentences: sentences,
-      targetSentence: sentences.first,
-    );
+    await service.playPage(page: bubblePage);
     expect(interruptions.initialized, isTrue);
     interruptions.events.add(null);
     expect(service.isPlaying, isFalse);
-    expect(service.currentSentenceId, 'one');
+    expect(service.currentSentenceId, isNull);
+    expect(service.currentBubbleId, 'bubble-one');
     expect(backend.pauseCount, 1);
     backend.complete();
     await Future<void>.delayed(Duration.zero);
@@ -83,14 +81,13 @@ void main() {
 
   test('background invalidates page continuation and blocks new playback until foreground', () async {
     final backend = FakeAudioBackend();
-    final service = AudioPlayerService(backend: backend)
-      ..setPlayMode(PlayMode.continuous);
+    final service = AudioPlayerService(backend: backend);
     addTearDown(service.dispose);
     final completions = <PagePlaybackCompletion>[];
     service.pageCompletions.listen(completions.add);
-    await service.playSentence(
-      pageSentences: sentences,
-      targetSentence: sentences.last,
+    await service.playPage(
+      page: legacyPage,
+      targetBubble: legacyPage.playbackBubbles.last,
     );
     backend.complete();
     await Future<void>.delayed(Duration.zero);
@@ -109,6 +106,31 @@ void main() {
     );
     expect(backend.playedAssets, hasLength(2));
   });
+
+  test(
+    'focus interruption while a complete bubble loads retains bubble highlight',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final interruptions = FakeInterruptions();
+      final service = AudioPlayerService(
+        backend: backend,
+        interruptionSource: interruptions,
+      );
+      addTearDown(service.dispose);
+      final loading = service.playPage(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      interruptions.events.add(null);
+      backend.delayFirstLoad!.complete();
+      await loading;
+      expect(service.currentBubble, same(bubbles.first));
+      expect(service.currentSentenceId, isNull);
+      expect(service.isPlaying, isFalse);
+      expect(backend.playedAssets, isEmpty);
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.playedAssets, isEmpty);
+    },
+  );
 
   test(
     'native pause updates state and late ready events do not interrupt startup',

@@ -16,6 +16,14 @@ const _sentence = PointSentence(
   rect: NormalizedRect(left: 0.4, top: 0.4, right: 0.6, bottom: 0.6),
 );
 
+const _wideBubble = DialogueBubble(
+  id: 'bubble',
+  text: 'Hello! Nice to meet you.',
+  audioPath: 'assets/bubble.mp3',
+  sentenceIds: ['a'],
+  rect: NormalizedRect(left: 0.2, top: 0.3, right: 0.8, bottom: 0.7),
+);
+
 class _SilentBackend implements AudioPlaybackBackend {
   _SilentBackend({this.failAsset = false});
 
@@ -98,6 +106,53 @@ void main() {
     expect(highlight.width, closeTo(60, 0.01));
     expect(highlight.height, closeTo(80, 0.01));
   });
+
+  testWidgets(
+    'bubble highlight covers full block while sentence highlight remains precise',
+    (tester) async {
+      Future<void> display({String? sentenceId, String? bubbleId}) =>
+          tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 400,
+                    height: 400,
+                    child: InteractiveTextbookPage(
+                      page: const TextbookPage(
+                        pageIndex: 1,
+                        imagePath: '',
+                        sentences: [_sentence],
+                        bubbles: [_wideBubble],
+                      ),
+                      activeSentenceId: sentenceId,
+                      activeBubbleId: bubbleId,
+                      onSentenceTap: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+      await display(bubbleId: 'bubble');
+      final origin = tester.getTopLeft(find.byType(InteractiveTextbookPage));
+      final bubbleRect = tester.getRect(
+        find.byKey(const Key('bubble-highlight')),
+      );
+      expect(bubbleRect.left - origin.dx, closeTo(110, 0.01));
+      expect(bubbleRect.top - origin.dy, closeTo(120, 0.01));
+      expect(bubbleRect.size.width, closeTo(180, 0.01));
+      expect(bubbleRect.size.height, closeTo(160, 0.01));
+      expect(find.byKey(const Key('sentence-highlight')), findsNothing);
+      await display(sentenceId: 'a');
+      final sentenceRect = tester.getRect(
+        find.byKey(const Key('sentence-highlight')),
+      );
+      expect(sentenceRect.size.width, closeTo(60, 0.01));
+      expect(sentenceRect.size.height, closeTo(80, 0.01));
+      expect(find.byKey(const Key('bubble-highlight')), findsNothing);
+    },
+  );
 
   testWidgets(
     'bottom bar switches mode, hides translation and shows mic notice',

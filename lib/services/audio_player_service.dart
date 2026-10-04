@@ -9,9 +9,18 @@ import 'audio_interruption_source.dart';
 enum PlayMode { single, continuous }
 
 class PagePlaybackCompletion {
-  const PagePlaybackCompletion(this.generation, this.sentenceId);
+  const PagePlaybackCompletion(
+    this.generation,
+    this.sentenceId, {
+    this.pageIndex,
+    this.lastBubbleId,
+  });
   final int generation;
+
+  /// Last child sentence; retained for callers reading older books.
   final String sentenceId;
+  final int? pageIndex;
+  final String? lastBubbleId;
 }
 
 /// Small boundary around just_audio so scheduling can be tested without a device.
@@ -80,6 +89,7 @@ class AudioPlayerService extends ChangeNotifier {
   bool _isForeground = true;
 
   String? _currentSentenceId;
+  DialogueBubble? _currentBubble;
   bool _isPlaying = false;
   PlayMode _currentMode = PlayMode.single;
   double _currentSpeed = 1.0;
@@ -90,8 +100,9 @@ class AudioPlayerService extends ChangeNotifier {
   final _pageCompletions = StreamController<PagePlaybackCompletion>.broadcast(
     sync: true,
   );
-  List<PointSentence> _pageSentences = const [];
-  int _currentIndex = -1;
+  TextbookPage? _page;
+  List<DialogueBubble> _pageBubbles = const [];
+  int _currentBubbleIndex = -1;
   int _requestId = 0;
   int? _activePlaybackRequest;
   int? _observedPlayingRequest;
@@ -99,6 +110,8 @@ class AudioPlayerService extends ChangeNotifier {
   bool _disposed = false;
 
   String? get currentSentenceId => _currentSentenceId;
+  String? get currentBubbleId => _currentBubble?.id;
+  DialogueBubble? get currentBubble => _currentBubble;
   bool get isPlaying => _isPlaying;
   PlayMode get currentMode => _currentMode;
   double get currentSpeed => _currentSpeed;
@@ -141,9 +154,15 @@ class AudioPlayerService extends ChangeNotifier {
     if (_currentMode == mode) return;
     ++_continuationGeneration;
     _currentMode = mode;
+    if (mode == PlayMode.single && _currentBubble != null) {
+      // A mode change must also invalidate a bubble whose asset is still loading.
+      unawaited(stop());
+      return;
+    }
     notifyListeners();
   }
 
+  /// Manual point reading always wins over a running or queued page sequence.
   Future<void> playSentence({
     required List<PointSentence> pageSentences,
     required PointSentence targetSentence,
@@ -151,7 +170,6 @@ class AudioPlayerService extends ChangeNotifier {
     if (_disposed) {
       return Future.error(StateError('AudioPlayerService has been disposed.'));
     }
-    if (!_isForeground) return Future<void>.value();
     final index = pageSentences.indexWhere(
       (sentence) => sentence.id == targetSentence.id,
     );
@@ -161,12 +179,58 @@ class AudioPlayerService extends ChangeNotifier {
       );
     }
 
-    final request = ++_requestId;
     ++_continuationGeneration;
-    _activePlaybackRequest = null;
-    _pageSentences = List<PointSentence>.unmodifiable(pageSentences);
-    _currentIndex = index;
+    _currentMode = PlayMode.single;
+    _page = null;
+    _pageBubbles = const [];
+    _currentBubbleIndex = -1;
+    _currentBubble = null;
+    if (!_isForeground) {
+      notifyListeners();
+      return Future<void>.value();
+    }
     _currentSentenceId = targetSentence.id;
+    return _loadAudio(targetSentence.audioPath);
+  }
+
+  /// Continuous reading uses a complete synthesized paragraph for each bubble.
+  /// Automatic same-page continuation calls _playBubble, never playSentence.
+  Future<void> playPage({
+    required TextbookPage page,
+    DialogueBubble? targetBubble,
+  }) {
+    if (_disposed) {
+      return Future.error(StateError('AudioPlayerService has been disposed.'));
+    }
+    if (!_isForeground) return Future<void>.value();
+    final bubbles = List<DialogueBubble>.unmodifiable(page.playbackBubbles);
+    final index = targetBubble == null
+        ? 0
+        : bubbles.indexWhere((bubble) => bubble.id == targetBubble.id);
+    if (targetBubble != null && index < 0) {
+      return Future.error(
+        ArgumentError.value(targetBubble.id, 'targetBubble', 'Not on page'),
+      );
+    }
+    ++_continuationGeneration;
+    _currentMode = PlayMode.continuous;
+    if (bubbles.isEmpty) return stop();
+    _page = page;
+    _pageBubbles = bubbles;
+    return _playBubble(index);
+  }
+
+  Future<void> _playBubble(int index) {
+    _currentBubbleIndex = index;
+    _currentBubble = _pageBubbles[index];
+    _currentSentenceId = null;
+    return _loadAudio(_currentBubble!.audioPath);
+  }
+
+  Future<void> _loadAudio(String audioPath) {
+    final request = ++_requestId;
+    _activePlaybackRequest = null;
+    _observedPlayingRequest = null;
     _isPlaying = false;
     notifyListeners();
 
@@ -178,7 +242,7 @@ class AudioPlayerService extends ChangeNotifier {
         if (request != _requestId || _disposed) return;
         await _interruptions?.initialize();
         if (request != _requestId || _disposed) return;
-        await _backend.setAsset(targetSentence.audioPath);
+        await _backend.setAsset(audioPath);
         await _pendingSpeed;
         if (request != _requestId || _disposed) return;
 
@@ -211,13 +275,14 @@ class AudioPlayerService extends ChangeNotifier {
     return _backend.stop();
   }
 
-  /// Suspend both loading and continuation while retaining the selected sentence.
+  /// Suspend loading and continuation while retaining the selected sentence/bubble.
   /// The next deliberate sentence tap/replay starts it from the beginning.
   Future<void> pause() async {
     if (_disposed) return;
     ++_requestId;
     ++_continuationGeneration;
     _activePlaybackRequest = null;
+    _observedPlayingRequest = null;
     _isPlaying = false;
     notifyListeners();
     try {
@@ -262,22 +327,25 @@ class AudioPlayerService extends ChangeNotifier {
     _activePlaybackRequest = null;
 
     if (_currentMode == PlayMode.continuous &&
-        _currentIndex + 1 < _pageSentences.length) {
-      final next = _pageSentences[_currentIndex + 1];
+        _currentBubble != null &&
+        _currentBubbleIndex + 1 < _pageBubbles.length) {
       unawaited(
-        playSentence(pageSentences: _pageSentences, targetSentence: next).then(
+        _playBubble(_currentBubbleIndex + 1).then(
           (_) {},
           onError: (Object error, StackTrace stackTrace) {
             debugPrint(
-              'AudioPlayerService: could not play next sentence: $error',
+              'AudioPlayerService: could not play next bubble: $error',
             );
           },
         ),
       );
-    } else if (_currentMode == PlayMode.continuous) {
+    } else if (_currentMode == PlayMode.continuous && _currentBubble != null) {
+      final lastBubble = _currentBubble!;
       final completion = PagePlaybackCompletion(
         _continuationGeneration,
-        _currentSentenceId!,
+        lastBubble.sentenceIds.lastOrNull ?? lastBubble.id,
+        pageIndex: _page?.pageIndex,
+        lastBubbleId: lastBubble.id,
       );
       _clearPlayback();
       unawaited(_finishPage(completion));
@@ -303,10 +371,13 @@ class AudioPlayerService extends ChangeNotifier {
 
   void _clearPlayback() {
     _activePlaybackRequest = null;
+    _observedPlayingRequest = null;
     _currentSentenceId = null;
+    _currentBubble = null;
     _isPlaying = false;
-    _pageSentences = const [];
-    _currentIndex = -1;
+    _page = null;
+    _pageBubbles = const [];
+    _currentBubbleIndex = -1;
     notifyListeners();
   }
 

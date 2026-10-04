@@ -11,6 +11,7 @@ class TextbookBottomBar extends StatelessWidget {
     required this.isTranslationEnabled,
     required this.onTranslationChanged,
     required this.activeSentence,
+    this.activeBubble,
     this.currentSpeed = 1.0,
     this.onSpeedChanged,
     this.onReplay,
@@ -22,6 +23,7 @@ class TextbookBottomBar extends StatelessWidget {
   final bool isTranslationEnabled;
   final ValueChanged<bool> onTranslationChanged;
   final PointSentence? activeSentence;
+  final DialogueBubble? activeBubble;
   final double currentSpeed;
   final ValueChanged<double>? onSpeedChanged;
   final VoidCallback? onReplay;
@@ -30,13 +32,15 @@ class TextbookBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final sentence = activeSentence;
+    final activeText = activeBubble?.text ?? activeSentence?.text;
+    final translation =
+        activeBubble?.translation ?? activeSentence?.translation;
     return SafeArea(
       top: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isTranslationEnabled && sentence != null)
+          if (isTranslationEnabled && activeText != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: Material(
@@ -53,7 +57,7 @@ class TextbookBottomBar extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              sentence.text,
+                              activeText,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodyLarge
@@ -61,8 +65,8 @@ class TextbookBottomBar extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              sentence.translation?.trim().isNotEmpty == true
-                                  ? sentence.translation!.trim()
+                              translation?.trim().isNotEmpty == true
+                                  ? translation!.trim()
                                   : '暂无释义',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

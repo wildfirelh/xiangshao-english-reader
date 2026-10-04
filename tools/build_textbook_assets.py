@@ -507,6 +507,140 @@ def extract_sentences(page: fitz.Page) -> list[tuple[str, dict[str, float]]]:
     return result
 
 
+def cluster_dialogue_bubbles(page: fitz.Page, sentences: list[dict],
+                             regions: list[dict], reviewed=None) -> list[dict]:
+    """Keep nearby lines of one speaker together without crossing panels.
+
+    A PDF text block may contain unrelated columns, and a single speech bubble
+    may span several blocks. Require both the panel/speaker identity and close
+    line geometry. Reviewed bubble membership can override geometry for this
+    exact PDF, but can never combine different panels or voices.
+    """
+    reviewed = reviewed or {}
+    blocks = []
+    for block in page.get_text('blocks'):
+        if block[6] == 0 and ENGLISH.search(block[4]):
+            blocks.append((block[5], normalized_rect(fitz.Rect(block[:4]), page)))
+
+    def block_ids(sentence):
+        r = sentence['rect']
+        x, y = (r['left'] + r['right']) / 2, (r['top'] + r['bottom']) / 2
+        return {number for number, b in blocks if b['left'] - 1e-6 <= x <= b['right'] + 1e-6
+                and b['top'] - 1e-6 <= y <= b['bottom'] + 1e-6}
+
+    membership = {s['id']: block_ids(s) for s in sentences}
+
+    def identity(s):
+        return s.get('sceneId'), s.get('speaker', 'Narrator'), s.get('voiceRole', 'narrator')
+
+    def nearby(a, b):
+        if identity(a) != identity(b):
+            return False
+        # Section letters, vocabulary and numbered exercise items are separate
+        # listening targets; block membership alone is not enough to merge them.
+        if not a.get('sceneId') and (len(a['text'].strip()) <= 2 or len(b['text'].strip()) <= 2):
+            return False
+        shared_block = bool(membership[a['id']] & membership[b['id']])
+        if a.get('speaker', 'Narrator') == 'Narrator' and not shared_block:
+            return False
+        if not a.get('sceneId') and not (ends_sentence(a['text']) and ends_sentence(b['text'])):
+            return False
+        ar, br = a['rect'], b['rect']
+        height = min(ar['bottom'] - ar['top'], br['bottom'] - br['top']) * page.rect.height
+        if height <= 0:
+            return False
+        a_top, b_top = ar['top'] * page.rect.height, br['top'] * page.rect.height
+        horizontal_gap = max(0, max(ar['left'], br['left']) - min(ar['right'], br['right'])) * page.rect.width
+        # Two punctuation-split sentences on the same line. Wide PDF blocks do
+        # not merge separated columns, even when their speaker is the same.
+        if abs(a_top - b_top) <= height * .30:
+            return shared_block and horizontal_gap <= height * .80
+        upper, lower = (ar, br) if ar['top'] <= br['top'] else (br, ar)
+        vertical_gap = (lower['top'] - upper['bottom']) * page.rect.height
+        left_gap = abs(upper['left'] - lower['left']) * page.rect.width
+        return -height * .15 <= vertical_gap <= height * .65 and left_gap <= height * .60
+
+    by_id = {s['id']: s for s in sentences}
+    groups = []
+    assigned = set()
+    for explicit in reviewed.get('bubbles', []):
+        ids = explicit['sentenceIds']
+        if not ids or len(set(ids)) != len(ids) or any(i not in by_id or i in assigned for i in ids):
+            raise ValueError('Reviewed bubble has missing or duplicate sentence IDs')
+        entries = [by_id[i] for i in ids]
+        if len({identity(s) for s in entries}) != 1:
+            raise ValueError('Reviewed bubble cannot cross scenes or speakers')
+        groups.append(entries)
+        assigned.update(ids)
+    remaining = [s for s in sentences if s['id'] not in assigned]
+    # Connected close lines preserve paragraphs, including separately stored
+    # continuation blocks. Identity checks prevent cross-panel/character links.
+    while remaining:
+        group = [remaining.pop(0)]
+        changed = True
+        while changed:
+            changed = False
+            for candidate in remaining[:]:
+                if any(nearby(member, candidate) for member in group):
+                    group.append(candidate)
+                    remaining.remove(candidate)
+                    changed = True
+        groups.append(group)
+
+    region_by_id = {r['id']: r for r in regions}
+    bubbles = []
+    for entries in groups:
+        # Reconstruct the original line order, independent of question/answer
+        # priorities used in the legacy flattened sentence list.
+        entries.sort(key=lambda s: (s['rect']['top'], s['rect']['left'], s['id']))
+        first = entries[0]
+        bubble_id = re.sub(r'_s(\d+)$', r'_b\1', min(s['id'] for s in entries))
+        rect = {side: (min if side in ('left', 'top') else max)(s['rect'][side] for s in entries)
+                for side in ('left', 'top', 'right', 'bottom')}
+        bubble = {key: first[key] for key in ('speaker', 'voiceRole', 'voiceSource', 'sceneId') if key in first}
+        bubble.update({'id': bubble_id, 'text': ' '.join(s['text'].strip() for s in entries),
+                       'translation': None, 'rect': rect,
+                       'sentenceIds': [s['id'] for s in entries]})
+        for sentence in entries:
+            sentence['bubbleId'] = bubble_id
+        bubbles.append(bubble)
+
+    def order(bubble):
+        r = bubble['rect']
+        region = region_by_id.get(bubble.get('sceneId'))
+        if region:
+            return region['anchor'], 1, region['number'], r['top'], r['left']
+        return r['top'], 0, 0, r['top'], r['left']
+    return sorted(bubbles, key=order)
+
+
+def configure_bubble_audio(bubbles: list[dict], sentences: list[dict],
+                           asset_prefix: str, narrator_voice=None) -> None:
+    by_id = {s['id']: s for s in sentences}
+    for bubble in bubbles:
+        configure_sentence_voice(bubble, narrator_voice)
+        key = speech_fingerprint(bubble)
+        bubble['speechFingerprint'] = key
+        if len(bubble['sentenceIds']) == 1:
+            # The same complete utterance needs only one offline MP3.
+            bubble['audioPath'] = by_id[bubble['sentenceIds'][0]]['audioPath']
+        else:
+            bubble['audioPath'] = f"{asset_prefix}/audios/{bubble['id']}_{key[:16]}.mp3"
+
+
+def populate_bubble_translations(pages: list[dict]) -> None:
+    for page in pages:
+        by_id = {s['id']: s for s in page['sentences']}
+        for bubble in page.get('bubbles', []):
+            bubble['translation'] = ' '.join(by_id[i].get('translation') or ''
+                                             for i in bubble['sentenceIds']).strip()
+
+
+def page_audio_entries(pages: list[dict]) -> list[dict]:
+    return [entry for page in pages for track in ('sentences', 'bubbles')
+            for entry in page.get(track, [])]
+
+
 def parse_pages(selection: str | None, count: int) -> list[int]:
     if not selection:
         return list(range(1, count + 1))
@@ -690,19 +824,22 @@ def build_assets(args: argparse.Namespace) -> None:
                 key = speech_fingerprint(sentence)
                 sentence['speechFingerprint'] = key
                 sentence['audioPath'] = f"{asset_prefix}/audios/{sentence['id']}_{key[:16]}.mp3"
+            bubbles = cluster_dialogue_bubbles(page, sentences, regions, reviewed.get(str(index)))
+            configure_bubble_audio(bubbles, sentences, asset_prefix, args.voice)
             manifest["pages"].append({
                 "pageIndex": index, "imagePath": f"{asset_prefix}/images/{image_name}",
-                "sentences": sentences,
+                "sentences": sentences, "bubbles": bubbles,
             })
-            print(f"Page {index}/{len(document)}: {len(sentences)} sentences, {args.dpi} DPI", flush=True)
+            print(f"Page {index}/{len(document)}: {len(sentences)} sentences, {len(bubbles)} bubbles, {args.dpi} DPI", flush=True)
             if not sentences:
                 print(f"WARNING: page {index} has no English text layer; image only (no OCR).", file=sys.stderr)
         all_sentences = [s for p in manifest["pages"] for s in p["sentences"]]
+        all_audio = page_audio_entries(manifest['pages'])
         if not all_sentences:
             raise ValueError("No English sentences found. Scanned PDFs need OCR first; book.json retained.")
         if not args.plan_only:
             # Resolve and validate every selected role before writing any assets.
-            validate_tts_configuration(all_sentences)
+            validate_tts_configuration(all_audio)
             for folder in ("images", "audios"):
                 (output / folder).mkdir(parents=True, exist_ok=True)
             if not (args.reuse_images and (output / 'images/cover.webp').is_file()):
@@ -722,17 +859,25 @@ def build_assets(args: argparse.Namespace) -> None:
             translate_sentences(all_sentences, args,
                                 PROJECT_ROOT / ".asset-cache" / f"{cache_key}.en-zh-CN.json",
                                 output / "book.json"),
-            synthesize(all_sentences, args),
+            synthesize(all_audio, args),
         )
     asyncio.run(populate())
+    populate_bubble_translations(manifest['pages'])
+    if old_manifest and old_manifest.get('bookId') == args.book_id:
+        # A Unit 1 validation run replaces only those pages. Preserve every
+        # other page, its translations, and its audio references.
+        updated = {p['pageIndex']: p for p in manifest['pages']}
+        for page in old_manifest.get('pages', []):
+            updated.setdefault(page['pageIndex'], page)
+        manifest['pages'] = [updated[i] for i in sorted(updated)]
     write_json(output / "book.json", manifest)
     # Retire only previously referenced generated MP3s after the new manifest is
     # committed. Keep a local backup; obsolete audio must not bloat the APK.
     if old_manifest:
         archive = PROJECT_ROOT / '.asset-cache' / 'previous-audio'
-        active = {s['audioPath'] for s in all_sentences}
+        active = {s['audioPath'] for s in page_audio_entries(manifest['pages'])}
         for old_page in old_manifest.get('pages', []):
-            for old in old_page.get('sentences', []):
+            for old in page_audio_entries([old_page]):
                 old_path = (PROJECT_ROOT / old['audioPath']).resolve()
                 if old['audioPath'] not in active and old_path.is_file() and old_path.parent == (output / 'audios').resolve():
                     archive.mkdir(parents=True, exist_ok=True)
