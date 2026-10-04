@@ -1,29 +1,29 @@
 # 项目交付与发布约定
 
-## 大版本发布已授权（2026-10-04 用户指示）
+## 当前发布渠道（2026-10-04 用户最新指示）
 
-用户回复“目前没有太多的功能要增加，发布吧”，已撤销之前的暂缓安排。此次汇总通知降音、六档持久化倍速、Gitee 发布渠道及应用内检测更新、下载并调用系统安装器，执行下方完整发布流程，无需再次确认。
+用户希望停止 AtomGit 发布，并继续 GitHub 发布。后续版本仅在 GitHub 与 Gitee 同步源码和正式 Release；停止向 AtomGit 推送新源码、标签和 APK Release。现有 AtomGit 仓库与历史版本保留，供旧链接访问。此指示替代下文涉及三端发布的历史安排。
 
-Gitee 已授权使用本机凭据创建 `wildfire666/xiangshao-english-reader`，与 AtomGit、GitHub 一样，每个平台仅保留一个公开源码与 Release 仓库。新增 Gitee 发布脚本负责同步源码与不可变版本标签、APK、校验文件和更新清单；必须核对匿名更新元数据访问和 APK 完整下载哈希，再报告发布成功。安装未知来源应用的系统授权只在实际安装更新时申请，App 私有目录下载不申请广泛存储权限。
+用户回复“目前没有太多的功能要增加，发布吧”后，已完成 `v1.4.0+5` 三端发布。该版包含通知降音、六档持久化倍速、Gitee 发布渠道及应用内检测更新、下载并调用系统安装器。历史 Release 和版本标签保持原样。
 
-本项目为“湘少英语三上点读”。2026-10-03 用户已明确改为公开源码，并授权将源码与 APK Release 合并发布。迁移已完成：AtomGit（原 GitCode）和 GitHub 每个平台只保留一个公开 `xiangshao-english-reader` 仓库；旧 `xiangshao-english-reader-releases` 仓库已在 Release、附件和下载入口迁移验证完成后删除。此授权替代原“私有源码仓库 + 独立公开下载仓库”的约定。每次更新 APK，文件名必须带版本号，同步提交并在两端发布新版本，写明实际增加、改进和修复的功能。后续交付 App 功能或教材资源更新时，在同一任务内完成以下流程，无需再次请求发布或同步确认。
+本项目为“湘少英语三上点读”。2026-10-03 用户已明确改为公开源码，并授权将源码与 APK Release 合并发布。每个平台只保留一个公开 `xiangshao-english-reader` 仓库；旧独立下载仓库已在迁移和下载验证后删除。每次更新 APK，文件名必须带版本号，同步提交并在 GitHub、Gitee 发布新版本，写明实际增加、改进和修复的功能。后续交付 App 功能或教材资源更新时，在同一任务内完成以下流程，无需再次请求发布或同步确认。
 
 1. 在 `pubspec.yaml` 同步语义版本号和递增的构建号（`版本+构建号`），同步 `README.md`、`CHANGELOG.md` 和 `releases/v{版本}.md`。发布说明使用中文，写本版实际新增、改进和修复的功能。
 2. 完成与改动相关的验证；常规交付执行 `flutter analyze`、`flutter test` 和 `py -3.13 -m unittest discover -s tools -p 'test_*.py' -v`，记录真实结果。教材更新还应核对清单、图片和音频完整性。
 3. 使用现有发布签名执行 `flutter build apk --release --split-per-abi`，验证版本、架构及签名。保留原签名身份，不重新生成或覆盖密钥。
 4. 运行 `py -3.13 tools/package_release.py` 校验并归档当前 ARM64 APK。正式安装包放入 `build/releases/v{版本}/`，命名为 `xiangshao-english-reader-v{版本}-build{构建号}-{架构}.apk`，并生成对应 SHA-256 校验文件。不得仅以 `app-release.apk` 等无版本文件名交付。示例：`xiangshao-english-reader-v1.2.0-build3-arm64-v8a.apk`。
-5. 正常提交本次源码、教材源资产和说明，推送至 AtomGit 公开仓库的 `main`：`https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader.git`。为新的 App 版本创建并推送 `v{版本}` annotated tag，保留已经发布的标签；对应 GitHub 公开仓库为 `https://github.com/wildfirelh/xiangshao-english-reader`。
-6. 运行 `py -3.13 tools/publish_public_release.py`，在上述 AtomGit 源码仓库创建正式 Release，发布对应中文说明、带版本号的 APK 和 SHA-256 校验文件。发布凭据使用已有 Git Credential Manager 或本机 `GITCODE_TOKEN` 环境变量。安装包和校验文件作为同仓 Release 附件提供，不提交 APK Git 对象。
-7. 接着运行 `py -3.13 tools/publish_github_release.py`，将源码分支与标签同步到上述 GitHub 公开仓库，并在同一仓库发布同一版本的中文说明、同一 APK 和 SHA-256 校验文件。GitHub 使用本机已登录的账户和凭据。
-8. 核对两端公开仓库的源码提交、版本标签、Release 和附件；使用不带登录凭据的请求检查仓库页面、发布页面与下载链接可访问，并分别重新下载 APK 核对 SHA-256。所有验证成功后，才报告两端同步与公开发布完成。
+5. 正常提交本次源码、教材源资产和说明，为新的 App 版本创建 `v{版本}` annotated tag，保留已经发布的标签。使用明确的 `github` 和 `gitee` 远端；停止使用 AtomGit `origin` 作为发布前置条件。
+6. 运行 `py -3.13 tools/publish_github_release.py`，直接将本地 `main` 与原有 annotated 标签同步至 `https://github.com/wildfirelh/xiangshao-english-reader`，在同一仓库发布中文说明、带版本号的 ARM64 APK 和 SHA-256 校验文件。该脚本仅需 GitHub 凭据，不依赖 AtomGit 源码、凭据、API 或镜像。
+7. 运行 `py -3.13 tools/publish_gitee_release.py`，将本地 `main` 与原有 annotated 标签同步至 `https://gitee.com/wildfire666/xiangshao-english-reader`，在同一仓库发布三个 ABI APK、校验文件及 `update.json`。使用已有 Gitee 凭据；先匿名完整下载验证 APK，再上传更新清单。安装包作为 Release 附件提供，不提交 APK Git 对象。
+8. 核对 GitHub、Gitee 的源码提交、版本标签、Release 和附件；使用不带登录凭据的请求验证公开页面与 APK 完整下载 SHA-256，另核对 Gitee 最新版本 API 与更新清单。所有验证成功后，才报告同步与公开发布完成。
 
-保留 `xiangshao-english-reader` 源码仓库的 AtomGit → GitHub 原生 Push 镜像，旧下载仓库的镜像随仓库迁移移除。原生镜像只同步 Git 提交、分支和标签，Release 说明及附件必须通过 GitHub 发布入口单独同步。继续运行发布脚本核对并补齐两端 Git 同步和 Release 发布；若镜像后续失败，准确记录状态并用发布脚本完成同步。
+AtomGit → GitHub 原生 Push 镜像曾完成首次及手动“立即同步”验证，自动触发未确认。后续发布直接由本地同步至 GitHub 与 Gitee，不依赖该镜像。`tools/publish_public_release.py` 等 AtomGit 工具保留为历史工具，不纳入正常发布流程。停止 AtomGit Release 不会影响 GitHub 已发布附件或 Gitee 应用内更新。
 
-首次镜像同步及后续“立即同步”已验证；本次新提交的自动触发尚未观察到，不得将手动镜像成功表述为自动触发已验证。每次发布仍需执行两个发布入口核对并补齐同步。
+安装未知来源应用的系统授权只在实际安装更新时申请；App 私有目录下载不申请广泛存储权限。
 
 仅修改发布渠道、说明或发布脚本，不改变 App 内容时，无需递增 App 版本。可以复用已有 APK 和版本说明完成公开发布，但不得移动已有 App 版本标签或改写已发布的历史更新日志、Release 内容。
 
-源码、教材资产、开发说明和已有提交历史使用上述两个公开仓库同步；不再创建或维护独立的 APK 下载仓库。改变仓库可见性前核对已有提交历史与当前暂存区，确保没有真实凭据和签名密钥；不得通过移动既有标签来迁移 Release。
+源码、教材资产、开发说明和已有提交历史使用 GitHub、Gitee 两个公开仓库同步；不再创建或维护独立的 APK 下载仓库。改变仓库可见性前核对已有提交历史与当前暂存区，确保没有真实凭据和签名密钥；不得通过移动既有标签来迁移 Release。
 
 凭据、`.env.volc`、缓存、`build/`、`android/key.properties` 和签名密钥不得提交。保持现有忽略规则，提交前检查暂存区；可提交 `.env.volc.example` 中的占位模板和公开音色 ID。
 

@@ -6,9 +6,9 @@ Flutter 项目，已实现教材 JSON 解析、Asset 加载、单句点读、整
 
 - [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.4.0/xiangshao-english-reader-v1.4.0-build5-arm64-v8a.apk)
 - [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0)
-- [AtomGit：下载 APK 与查看版本更新](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
+- [AtomGit：历史版本下载](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
 
-每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
+后续版本在 GitHub 和码云发布，每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。AtomGit 保留历史版本，停止新增发布。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
 
 当前版本为 `1.4.0+5`，增加通知降音、六档持久化倍速和码云应用内更新。首次从旧版升级需要下载本版 APK 覆盖安装；此后可从书架“检查更新”直接下载并安装后续版本，详见 [版本说明](releases/v1.4.0.md)。
 
@@ -280,29 +280,29 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 ```powershell
 # 构建完成后，核对 APK 内部版本并归档带版本号的安装包及 SHA-256
 py -3.13 tools/package_release.py
-# 源码更新提交至 AtomGit 公开 main，并推送新版本的 annotated tag 后，在同一仓库发布 Release
-py -3.13 tools/publish_public_release.py
-# 同步 GitHub 公开源码仓库，在同一仓库发布同版本说明、APK 与 SHA-256
+# 提交本次源码，并创建新版本的 annotated tag 后，直接同步 GitHub 并发布 APK 与 SHA-256
 py -3.13 tools/publish_github_release.py
+# 同步码云，发布三个架构的 APK、校验文件与应用内更新清单
+py -3.13 tools/publish_gitee_release.py
 ```
 
-归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。AtomGit（原 GitCode）同仓发布入口为 `tools/publish_public_release.py`，凭据使用本机 `GITCODE_TOKEN` 环境变量或现有 Git Credential Manager；GitHub 同仓发布入口为 `tools/publish_github_release.py`，使用本机已登录的 GitHub 账户和凭据。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
+归档脚本会拒绝版本不符的旧 APK，以及覆盖不同内容的同名文件。GitHub 发布入口为 `tools/publish_github_release.py`，直接读取本地版本标签并使用 GitHub 凭据同步源码和附件，不访问 AtomGit；码云入口为 `tools/publish_gitee_release.py`，仅使用 Gitee 凭据。本项目的持续发布约定记录在 [AGENTS.md](AGENTS.md)。
 
-2026-10-03 已完成仓库合并：两端各使用一个公开仓库，源码与 APK Release 同仓发布。源码使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本：
+2026-10-03 已完成仓库合并，2026-10-04 发布 `v1.4.0` 后，按用户要求停止 AtomGit 新版本发布。后续 GitHub 与码云使用 `main` 和 `v{版本}` annotated tag 记录每个 App 版本：
 
-| 用途 | AtomGit / GitCode | GitHub | 可见性与内容 |
-| --- | --- | --- | --- |
-| 源码与下载 | [xiangshao-english-reader](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader) | [wildfirelh/xiangshao-english-reader](https://github.com/wildfirelh/xiangshao-english-reader) | 公开：源码、教材资产和开发说明；Release 提供中文版本说明、APK 和 `.apk.sha256` 附件 |
+| 平台 | 仓库 | 发布用途 |
+| --- | --- | --- |
+| GitHub | [wildfirelh/xiangshao-english-reader](https://github.com/wildfirelh/xiangshao-english-reader) | 公开源码与 ARM64 APK、中文版本说明和校验文件 |
+| Gitee 码云 | [wildfire666/xiangshao-english-reader](https://gitee.com/wildfire666/xiangshao-english-reader) | 公开源码、三个架构的 APK、中文版本说明、校验文件及应用内更新清单 |
+| AtomGit / GitCode | [xiangshao-english-reader](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader) | 保留源码和历史版本，停止新增发布 |
 
-新增同名公开 [Gitee 仓库](https://gitee.com/wildfire666/xiangshao-english-reader)，同时提供源码、三个架构的 APK、校验文件及 `update.json`，作为应用内更新渠道。码云网页的部分下载入口可能提示登录；本应用和上方下载链接直接使用已验证的公开 Release 附件地址。
+Gitee 的 `update.json` 作为应用内更新渠道。码云网页的部分下载入口可能提示登录；本应用和上方下载链接直接使用已验证的公开 Release 附件地址。
 
-保留现有源码提交历史，旧独立下载仓库已在 Release 和附件迁移、匿名访问验证完成后删除。两边 Release 必须使用同一版本说明、同一安装包和同一 SHA-256 校验文件；APK 作为 Release 附件发布，不提交 APK Git 对象。
+保留现有源码提交历史，旧独立下载仓库已在 Release 和附件迁移、匿名访问验证完成后删除。GitHub 和码云 Release 必须使用同一版本说明、同一 ARM64 安装包和同一 SHA-256 校验文件；APK 作为 Release 附件发布，不提交 APK Git 对象。
 
-保留源码仓库 AtomGit → GitHub 的原生 Push 镜像。首次同步与“立即同步”已验证；原生镜像同步 Git 提交、分支和标签，Release 说明及 APK 附件由 `tools/publish_github_release.py` 单独同步，脚本也会检查并补齐 Git 同步。
+此前 AtomGit → GitHub 原生 Push 镜像的首次同步与“立即同步”已验证，自动触发未确认。后续通过上述两个发布脚本直接同步本地 `main` 与版本标签，GitHub Release 与 APK 上传独立完成，停止 AtomGit 发布不会影响 GitHub 发布或码云更新。AtomGit 发布工具保留为历史工具。
 
-本次后续提交未观察到自动触发，已通过镜像的“立即同步”补齐两端提交；自动触发仍待确认。后续发布继续执行上述两个发布脚本，核对并补齐同步结果。
-
-公开发布必须核对两端源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载两端 APK 比较 SHA-256。只有两端匿名访问和下载校验均通过，才将该版本视为同步与公开发布完成。
+公开发布必须核对 GitHub 和码云的源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载 APK 比较 SHA-256；另核对 Gitee 最新版本 API 与更新清单。只有验证通过，才将该版本视为同步与公开发布完成。
 
 当前应用版本与说明为 [v1.4.0](releases/v1.4.0.md)，下载入口为 [AtomGit Release](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)、[GitHub v1.4.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.4.0) 和 [Gitee Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.4.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 

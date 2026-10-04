@@ -311,6 +311,84 @@ class GitHubReleaseTests(unittest.TestCase):
             sleep.assert_not_called()
 
 
+class GitHubSourceSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.head = "b" * 40
+        self.app_commit = "a" * 40
+        self.status = ""
+        self.tag_kind = "tag"
+        self.changed_paths = ""
+        self.branch_head = self.head
+        self.ancestor_result = 0
+        self.calls = []
+
+    def fake_git(self, cwd, *args, **kwargs):
+        self.calls.append(args)
+        if args == ("status", "--porcelain"):
+            return self.status
+        if args == ("rev-parse", "HEAD"):
+            return self.head
+        if args == ("rev-parse", "refs/heads/main"):
+            return self.branch_head
+        if args == ("cat-file", "-t", "refs/tags/v1.4.0"):
+            return self.tag_kind
+        if args == ("rev-parse", "v1.4.0^{commit}"):
+            return self.app_commit
+        if args == ("merge-base", "--is-ancestor", self.app_commit, self.head):
+            return subprocess.CompletedProcess([], self.ancestor_result)
+        if args == ("diff", "--name-only", self.app_commit, self.head, "--",
+                    "pubspec.yaml", "lib", "android", "assets"):
+            return self.changed_paths
+        self.fail(f"Unexpected Git call: {args}")
+
+    def snapshot(self):
+        with patch.object(publisher, "git_command", side_effect=self.fake_git), \
+             patch.object(publisher.requests, "Session") as session, \
+             patch.object(publisher, "credentials") as credentials:
+            result = publisher.source_snapshot("v1.4.0")
+        session.assert_not_called()
+        credentials.assert_not_called()
+        self.assertFalse(any(args[0] in ("remote", "ls-remote", "fetch", "push")
+                             for args in self.calls))
+        return result
+
+    def test_local_tag_validation_needs_no_atomgit_remote_credentials_or_network(self):
+        self.assertEqual(self.snapshot(), self.app_commit)
+
+    def test_dirty_worktree_wrong_branch_and_lightweight_tag_are_rejected(self):
+        for attribute, value in (("status", " M README.md"), ("branch_head", "c" * 40),
+                                 ("tag_kind", "commit")):
+            with self.subTest(attribute=attribute):
+                original = getattr(self, attribute)
+                setattr(self, attribute, value)
+                try:
+                    with self.assertRaises(RuntimeError):
+                        self.snapshot()
+                finally:
+                    setattr(self, attribute, original)
+
+    def test_app_changes_after_version_tag_are_rejected(self):
+        for path in ("pubspec.yaml", "lib/main.dart", "android/app/build.gradle.kts",
+                     "assets/textbooks/xiangshao_3_1/book.json"):
+            with self.subTest(path=path):
+                self.changed_paths = path
+                with self.assertRaisesRegex(RuntimeError, "changed after"):
+                    self.snapshot()
+
+    def test_tag_outside_main_history_is_rejected(self):
+        self.ancestor_result = 1
+        with self.assertRaisesRegex(RuntimeError, "current main history"):
+            self.snapshot()
+
+    def test_invalid_tag_is_rejected_without_git_or_network(self):
+        with patch.object(publisher, "git_command") as git, \
+             patch.object(publisher.requests, "Session") as session:
+            with self.assertRaisesRegex(RuntimeError, "Invalid App version tag"):
+                publisher.source_snapshot("latest")
+        git.assert_not_called()
+        session.assert_not_called()
+
+
 class GitHubMainTests(unittest.TestCase):
     def test_one_source_repo_is_mirrored_and_release_targets_its_app_tag(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -330,14 +408,15 @@ class GitHubMainTests(unittest.TestCase):
                  patch.object(publisher, "read_version", return_value=("1.2.0", 3)), \
                  patch.object(publisher, "package_release", return_value={"filename": apk.name, "sha256": "test-digest"}), \
                  patch.object(publisher, "credentials", return_value="gh-test-token"), \
-                 patch.object(publisher, "atomgit_credentials", return_value="atomgit-test-token"), \
-                 patch.object(publisher, "source_snapshot", return_value=app_commit), \
-                 patch.object(publisher, "git", side_effect=lambda *args: notes if args[0] == "show" else "mock-origin"), \
+                 patch.object(publisher, "source_snapshot", return_value=app_commit) as snapshot, \
+                 patch.object(publisher, "git", return_value=notes) as git, \
                  patch.object(publisher, "mirror_repository", return_value={"main": main_commit, "annotatedVersionTags": 1}) as mirror, \
                  patch.object(publisher, "verify_anonymous_pages") as verify, \
                  patch.object(publisher, "GitHubRelease", return_value=client), \
                  contextlib.redirect_stdout(io.StringIO()):
                 publisher.main()
+            snapshot.assert_called_once_with("v1.2.0")
+            git.assert_called_once_with("show", f"{app_commit}:releases/v1.2.0.md")
             mirror.assert_called_once_with(root, repository, "gh-test-token")
             self.assertEqual(client.publish.call_args.args[:3], (repository, "v1.2.0", app_commit))
             self.assertTrue(all(call.args == (repository,) and call.kwargs == {"private": False}

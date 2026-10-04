@@ -18,11 +18,7 @@ from urllib.parse import quote, urlsplit
 import requests
 
 from package_release import DEFAULT_AAPT, package_release, read_version, sha256_file
-from publish_public_release import (
-    ROOT, credentials as atomgit_credentials, git, source_snapshot,
-)
-
-
+ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.github.com"
 GH = Path(r"C:\Program Files\GitHub CLI\gh.exe")
 DEFAULT_OWNER = "wildfirelh"
@@ -61,6 +57,33 @@ def git_command(cwd, *args, token=None, check=True, anonymous=False):
         # Neither stderr nor signed URLs/credential-helper output may reach logs.
         raise RuntimeError(f"GitHub mirror Git operation failed: {args[0]}")
     return result.stdout.strip() if check else result
+
+
+def git(*args):
+    return git_command(ROOT, *args)
+
+
+def source_snapshot(tag):
+    """Validate the local App tag without contacting another hosting platform."""
+    if not VERSION_TAG.fullmatch(tag):
+        raise RuntimeError("Invalid App version tag")
+    if git("status", "--porcelain"):
+        raise RuntimeError("Commit publishing changes before publishing")
+    head = git("rev-parse", "HEAD")
+    if head != git("rev-parse", "refs/heads/main"):
+        raise RuntimeError("Check out main before publishing")
+    if git("cat-file", "-t", f"refs/tags/{tag}") != "tag":
+        raise RuntimeError("App version tag must remain annotated")
+    tagged_commit = git("rev-parse", f"{tag}^{{commit}}")
+    if git_command(ROOT, "merge-base", "--is-ancestor", tagged_commit, head,
+                   check=False).returncode:
+        raise RuntimeError("App version tag must belong to the current main history")
+    if git("diff", "--name-only", tagged_commit, head, "--",
+           "pubspec.yaml", "lib", "android", "assets"):
+        raise RuntimeError("App or textbook changed after its version tag; build a new version")
+    # mirror_repository subsequently verifies remote GitHub main and every tag,
+    # rejecting divergent branches or moved tags before publishing any Release.
+    return tagged_commit
 
 
 def mirror_repository(cwd, repository, token):
@@ -317,7 +340,7 @@ def main():
     metadata = package_release(ROOT, args.apk.resolve(), args.aapt.resolve())
     apk = ROOT / "build/releases" / tag / metadata["filename"]
     notes = (ROOT / "releases" / f"{tag}.md").read_text(encoding="utf-8")
-    source_commit = source_snapshot(tag, atomgit_credentials(git("remote", "get-url", "origin")))
+    source_commit = source_snapshot(tag)
     if git("show", f"{source_commit}:releases/{tag}.md").strip() != notes.strip():
         raise RuntimeError("Release notes changed after their App version tag")
     token = credentials()
