@@ -14,6 +14,7 @@ TOOLS = str(Path(__file__).resolve().parent)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import publish_github_release as publisher
+import release_presentation
 
 
 class ReleaseTitleTests(unittest.TestCase):
@@ -236,6 +237,32 @@ class GitHubReleaseTests(unittest.TestCase):
         request.assert_not_called()
         upload.assert_not_called()
         self.assertTrue(all(call.kwargs["anonymous"] for call in verify.call_args_list))
+
+    def test_registered_poster_prefix_preserves_notes_and_reuses_existing_attachments(self):
+        prefix = "<!-- promotion:start -->\n![海报](https://example.com/poster.png)\n<!-- promotion:end -->"
+        registry = self.apk.parent / "presentation.json"
+        registry.write_text(json.dumps({"schemaVersion": 1, "releases": {
+            "v1.2.0": {"github": {"prefix": prefix}},
+        }}, ensure_ascii=False), encoding="utf-8")
+        existing = {**self.release, "draft": False, "body": prefix + "\n\n中文说明"}
+        with patch.object(release_presentation, "REGISTRY", registry):
+            result, request, upload, verify = self.publish(
+                existing=existing, assets=[{"name": f.name} for f in self.files])
+        self.assertEqual(result[0]["body"], existing["body"])
+        request.assert_not_called()
+        upload.assert_not_called()
+        self.assertEqual(verify.call_count, 2)
+
+    def test_registered_poster_does_not_allow_changes_to_original_release_notes(self):
+        prefix = "<!-- promotion:start -->\n宣传图\n<!-- promotion:end -->"
+        registry = self.apk.parent / "presentation.json"
+        registry.write_text(json.dumps({"schemaVersion": 1, "releases": {
+            "v1.2.0": {"github": {"prefix": prefix}},
+        }}), encoding="utf-8")
+        for body in (prefix + "\n\n修改说明", prefix + "\n\n中文说明\n额外内容"):
+            with self.subTest(body=body), patch.object(release_presentation, "REGISTRY", registry):
+                with self.assertRaisesRegex(RuntimeError, "refusing to overwrite"):
+                    self.publish(existing={**self.release, "draft": False, "body": body})
 
     def test_existing_release_content_mismatch_never_clobbered(self):
         for changes in ({"body": "changed"}, {"name": "小学英语点读 v1.2.0"},

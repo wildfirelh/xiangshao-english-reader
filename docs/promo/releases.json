@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "releases": {
+    "v1.7.1": {
+      "github": {
+        "prefix": "<!-- textbook-promotion:v1.7.1:start -->\n## 小学英语点读 · 欢迎试用\n\n![小学英语点读 v1.7.1 宣传海报](https://raw.githubusercontent.com/wildfirelh/xiangshao-english-reader/c5cfab38aabb9aca9c70a73aa04c152e79e4c949/docs/promo/v1.7.1-poster.png)\n\n**点一点，听英语；读一读，练开口。**\n\n现已支持湘少版三年级上册，包含 10 个单元。体验点读与对话连读、离线跟读与词级反馈、六档语速与中文释义，以及课本原音／自录音对比试听。\n\n[直接下载 Android ARM64 安装包（码云，无需登录，98.34 MiB）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-build9-arm64-v8a.apk) · [GitHub 下载入口](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.1)\n\n海报中的手机界面为功能示意。跟读匹配分依据识别文本与完整度；录音与识别在手机本地完成。欢迎试用并反馈使用体验。\n<!-- textbook-promotion:v1.7.1:end -->",
+        "imageUrl": "https://raw.githubusercontent.com/wildfirelh/xiangshao-english-reader/c5cfab38aabb9aca9c70a73aa04c152e79e4c949/docs/promo/v1.7.1-poster.png",
+        "imageFile": "docs/promo/v1.7.1-poster.png",
+        "imageSha256": "26975d24e23b93f3043b499042f49ee511d284d2dd2520f2c1845760b30a92af"
+      },
+      "gitee": {
+        "prefix": "<!-- textbook-promotion:v1.7.1:start -->\n## 小学英语点读 · 欢迎试用\n\n![小学英语点读 v1.7.1 宣传海报](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-poster.png)\n\n**点一点，听英语；读一读，练开口。**\n\n现已支持湘少版三年级上册，包含 10 个单元。体验点读与对话连读、离线跟读与词级反馈、六档语速与中文释义，以及课本原音／自录音对比试听。\n\n[直接下载 Android ARM64 安装包（码云，无需登录，98.34 MiB）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-build9-arm64-v8a.apk) · [GitHub 下载入口](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.1)\n\n海报中的手机界面为功能示意。跟读匹配分依据识别文本与完整度；录音与识别在手机本地完成。欢迎试用并反馈使用体验。\n<!-- textbook-promotion:v1.7.1:end -->",
+        "imageUrl": "https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-poster.png",
+        "imageFile": "docs/promo/v1.7.1-poster.png",
+        "imageSha256": "26975d24e23b93f3043b499042f49ee511d284d2dd2520f2c1845760b30a92af"
+      }
+    }
+  }
+}

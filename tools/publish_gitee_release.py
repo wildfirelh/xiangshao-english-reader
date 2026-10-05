@@ -22,6 +22,7 @@ from package_release import (
     ABI_VERSION_OFFSETS, DEFAULT_AAPT, package_release, read_version,
     sha256_file, write_sidecar,
 )
+from release_presentation import release_body_matches
 from release_title import release_title
 
 
@@ -224,7 +225,8 @@ class GiteeRelease:
             })
         if (release.get("tag_name") != tag or release.get("name") != title
                 or release.get("target_commitish") != commit
-                or release.get("body", "").strip() != notes.strip()
+                or not release_body_matches(release.get("body", ""), notes,
+                                            tag=tag, platform="gitee")
                 or release.get("prerelease") is not False):
             raise RuntimeError("Existing Gitee release differs; immutable releases are never overwritten")
         assets = {asset["name"]: asset for asset in self.attachments(release["id"])}

@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -11,6 +12,7 @@ TOOLS = str(Path(__file__).resolve().parent)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import publish_gitee_release as publisher
+import release_presentation
 
 
 class GiteeManifestTests(unittest.TestCase):
@@ -296,6 +298,34 @@ class GiteePublishTests(unittest.TestCase):
         upload.assert_not_called()
         self.assertEqual(request.call_count, 1)
         self.assertEqual(verify.call_count, 3)
+
+    def test_registered_poster_prefix_reuses_apks_manifest_and_extra_image_attachment(self):
+        prefix = "<!-- promotion:start -->\n![海报](https://example.com/poster.png)\n<!-- promotion:end -->"
+        registry = self.apk.parent / "presentation.json"
+        registry.write_text(json.dumps({"schemaVersion": 1, "releases": {
+            "v1.4.0": {"gitee": {"prefix": prefix}},
+        }}, ensure_ascii=False), encoding="utf-8")
+        existing = {**self.release, "body": prefix + "\n\n中文说明"}
+        attachments = [self.asset(file) for file in [*self.files, self.manifest]]
+        attachments.append({"name": "poster.png", "size": 100,
+                            "browser_download_url": "https://example.com/poster.png"})
+        with patch.object(release_presentation, "REGISTRY", registry):
+            _, request, upload, verify = self.publish(existing, attachments)
+        upload.assert_not_called()
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(request.call_args.args[0], "GET")
+        self.assertEqual(verify.call_count, 3)
+
+    def test_registered_poster_does_not_allow_changes_to_original_release_notes(self):
+        prefix = "<!-- promotion:start -->\n宣传图\n<!-- promotion:end -->"
+        registry = self.apk.parent / "presentation.json"
+        registry.write_text(json.dumps({"schemaVersion": 1, "releases": {
+            "v1.4.0": {"gitee": {"prefix": prefix}},
+        }}), encoding="utf-8")
+        for body in (prefix + "\n\n修改说明", prefix + "\n\n中文说明\n额外内容"):
+            with self.subTest(body=body), patch.object(release_presentation, "REGISTRY", registry):
+                with self.assertRaisesRegex(RuntimeError, "immutable releases"):
+                    self.publish({**self.release, "body": body})
 
     def test_different_notes_title_tag_commit_and_prerelease_are_never_overwritten(self):
         for changes in ({"body": "changed"}, {"target_commitish": "b" * 40},

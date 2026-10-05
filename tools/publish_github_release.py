@@ -18,6 +18,7 @@ from urllib.parse import quote, urlsplit
 import requests
 
 from package_release import DEFAULT_AAPT, package_release, read_version, sha256_file
+from release_presentation import release_body_matches
 from release_title import release_title
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.github.com"
@@ -279,7 +280,8 @@ class GitHubRelease:
                 "body": notes, "draft": True, "prerelease": False,
             })
         if (release.get("tag_name") != tag or release.get("name") != title
-                or release.get("body", "").strip() != notes.strip()
+                or not release_body_matches(release.get("body", ""), notes,
+                                            tag=tag, platform="github")
                 or release.get("target_commitish") != commit or release.get("prerelease") is not False
                 or not isinstance(release.get("draft"), bool)):
             raise RuntimeError("Existing GitHub release differs; refusing to overwrite version history")
