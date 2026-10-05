@@ -1,5 +1,13 @@
 # 小学英语点读
 
+## 应用介绍与试用
+
+![小学英语点读 v1.7.1 宣传海报](docs/promo/v1.7.1-poster.png)
+
+目前支持湘少版三年级上册。点读与对话连读、六档语速、中文释义、离线跟读及原音／自录音对比试听，帮助孩子听英语、练开口。海报中的手机界面为功能示意，跟读匹配分依据识别文本与完整度。
+
+[直接下载 Android ARM64 版 v1.7.1（码云，无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-build9-arm64-v8a.apk) · [GitHub 发布页](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.1)
+
 Flutter 多教材点读应用。主入口为“书本 / 我的”双 Tab，采用悬浮胶囊导航；书架根据本地教材清单显示封面、年级筛选和独立阅读进度，点击后才加载该教材的阅读器。支持单句点读、整页连读、顺序连读、暂停／继续、单元目录、六档语速、通知降音、应用内更新和本地离线英语跟读。
 
 历史版本 `v1.5.0` 发布多教材架构与主界面重构，应用正式更名为“小学英语点读”。
