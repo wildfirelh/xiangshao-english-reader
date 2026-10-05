@@ -8,17 +8,29 @@
     "encoder.int8.onnx": {
       "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/672fbf1b30579d6585301139bb363f42a0ad4a24/encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
       "size": 71083163,
-      "sha256": "563fde436d16cf7607cf408cd6b30909819d03162652ef389c2450ced3f45ac1"
+      "sha256": "563fde436d16cf7607cf408cd6b30909819d03162652ef389c2450ced3f45ac1",
+      "asset": "encoder.int8.onnx.xz",
+      "compression": "xz",
+      "assetSize": 55895892,
+      "assetSha256": "e20dca9308b8f851e281b16887d4b0368e6e89a61c3d71a9ccb84b0cf848c332"
     },
     "decoder.onnx": {
       "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/672fbf1b30579d6585301139bb363f42a0ad4a24/decoder-epoch-99-avg-1-chunk-16-left-128.onnx",
       "size": 2092621,
-      "sha256": "7bf787f90b194b307e5a4ad6a34fadb4e748304c35f78a8d66358a05b13ee6ef"
+      "sha256": "7bf787f90b194b307e5a4ad6a34fadb4e748304c35f78a8d66358a05b13ee6ef",
+      "asset": "decoder.onnx.xz",
+      "compression": "xz",
+      "assetSize": 1931560,
+      "assetSha256": "b70c3c2c0ea51e28c9951c16d81c12abf0e946ee2ca8d0999b34baa3905c3101"
     },
     "joiner.int8.onnx": {
       "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/672fbf1b30579d6585301139bb363f42a0ad4a24/joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
       "size": 259335,
-      "sha256": "d944208d660d67c8d72cd2acaeac971fa5ceb8c80e76c1968148846fedd6e297"
+      "sha256": "d944208d660d67c8d72cd2acaeac971fa5ceb8c80e76c1968148846fedd6e297",
+      "asset": "joiner.int8.onnx.xz",
+      "compression": "xz",
+      "assetSize": 199608,
+      "assetSha256": "2997fa3047657c9ad04dd413a9e26a4209c8006b135297ac65f739ecc619edd7"
     },
     "tokens.txt": {
       "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/672fbf1b30579d6585301139bb363f42a0ad4a24/tokens.txt",

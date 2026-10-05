@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.7.0+8
+version: 1.7.1+9
 
 environment:
   sdk: ^3.13.5
@@ -33,6 +33,7 @@ dependencies:
   just_audio: ^0.9.36
   audio_session: ^0.1.25
   crypto: ^3.0.7
+  archive: ^4.3.0
   sherpa_onnx: ^1.10.0
   record: ^5.1.2
   permission_handler: ^11.3.1
@@ -72,7 +73,13 @@ flutter:
     - assets/textbooks/xiangshao_3_1/
     - assets/textbooks/xiangshao_3_1/images/
     - assets/textbooks/xiangshao_3_1/audios/
-    - assets/models/sherpa/
+    - assets/models/sherpa/encoder.int8.onnx.xz
+    - assets/models/sherpa/decoder.onnx.xz
+    - assets/models/sherpa/joiner.int8.onnx.xz
+    - assets/models/sherpa/tokens.txt
+    - assets/models/sherpa/model.json
+    - assets/models/sherpa/LICENSE
+    - assets/models/sherpa/README.md
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

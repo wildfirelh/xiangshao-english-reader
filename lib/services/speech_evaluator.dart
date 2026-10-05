@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../models/speech_evaluation.dart';
+import 'sherpa_model_assets.dart';
 import 'sherpa_recognition_worker.dart';
 import 'speech_alignment.dart';
 
@@ -669,37 +668,18 @@ Future<SherpaModelPaths> _copyModelAssetsOnce() async {
   await directory.create(recursive: true);
   Future<String> copy(String name) async {
     final metadata = fileMetadata[name] as Map<String, dynamic>;
-    final size = metadata['size'] as int;
-    final expectedHash = metadata['sha256'] as String;
-    final file = File('${directory.path}/$name');
-    if (await file.exists() && await file.length() == size) {
-      final path = file.path;
-      final digest = await Isolate.run(() async {
-        return (await sha256.bind(File(path).openRead()).first).toString();
-      });
-      if (digest == expectedHash) return file.path;
-    }
-    final bytes = await rootBundle.load('assets/models/sherpa/$name');
-    if (bytes.lengthInBytes != size) {
-      throw StateError('Model size mismatch: $name');
-    }
-    final temporary = File('${file.path}.partial');
-    await temporary.writeAsBytes(
-      bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-      flush: true,
+    return materializeSherpaModelAsset(
+      name: name,
+      metadata: metadata,
+      directory: directory,
+      loadAsset: (assetName) async {
+        final bytes = await rootBundle.load('assets/models/sherpa/$assetName');
+        return bytes.buffer.asUint8List(
+          bytes.offsetInBytes,
+          bytes.lengthInBytes,
+        );
+      },
     );
-    final temporaryPath = temporary.path;
-    final digest = await Isolate.run(() async {
-      return (await sha256.bind(File(temporaryPath).openRead()).first)
-          .toString();
-    });
-    if (digest != expectedHash) {
-      await temporary.delete();
-      throw StateError('Model checksum mismatch: $name');
-    }
-    if (await file.exists()) await file.delete();
-    await temporary.rename(file.path);
-    return file.path;
   }
 
   final encoder = await copy('encoder.int8.onnx');

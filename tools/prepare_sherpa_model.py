@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import lzma
 import time
 import urllib.request
 from pathlib import Path
@@ -27,6 +28,38 @@ def verified(path, size, checksum):
         return False
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest() == checksum
+
+
+def pack_model(target, size, checksum):
+    """Bundle a lossless XZ copy; native Sherpa still reads the original ONNX."""
+    packed = target.with_suffix(target.suffix + ".xz")
+    valid = False
+    if packed.is_file():
+        try:
+            digest, decoded_size = hashlib.sha256(), 0
+            with lzma.open(packed, "rb") as stream:
+                while chunk := stream.read(1024 * 1024):
+                    digest.update(chunk)
+                    decoded_size += len(chunk)
+            valid = decoded_size == size and digest.hexdigest() == checksum
+        except (OSError, EOFError, lzma.LZMAError):
+            pass
+    if not valid:
+        partial = packed.with_suffix(packed.suffix + ".part")
+        try:
+            with target.open("rb") as source, lzma.open(
+                partial, "wb", format=lzma.FORMAT_XZ,
+                check=lzma.CHECK_CRC64, preset=6,
+            ) as output:
+                while chunk := source.read(1024 * 1024):
+                    output.write(chunk)
+            partial.replace(packed)
+        finally:
+            partial.unlink(missing_ok=True)
+    with packed.open("rb") as stream:
+        packed_hash = hashlib.file_digest(stream, "sha256").hexdigest()
+    return {"asset": packed.name, "compression": "xz",
+            "assetSize": packed.stat().st_size, "assetSha256": packed_hash}
 
 
 def prepare(output):
@@ -55,6 +88,9 @@ def prepare(output):
                     time.sleep(2 * (attempt + 1))
         print(f"Verified {filename}", flush=True)
         metadata["files"][filename] = {"url": url, "size": size, "sha256": checksum}
+        if filename.endswith(".onnx"):
+            metadata["files"][filename].update(pack_model(target, size, checksum))
+            print(f"Packed {filename}: {metadata['files'][filename]['assetSize']:,} bytes", flush=True)
     (output / "model.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     print(f"Offline model ready: {sum(item[1] for item in FILES.values()):,} bytes", flush=True)
 

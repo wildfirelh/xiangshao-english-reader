@@ -67,6 +67,14 @@ android {
             isShrinkResources = true
         }
     }
+
+    packaging {
+        jniLibs {
+            // Lossless APK compression keeps offline-model builds within
+            // Gitee's attachment limit. Android extracts the unchanged libs.
+            useLegacyPackaging = true
+        }
+    }
 }
 
 kotlin {

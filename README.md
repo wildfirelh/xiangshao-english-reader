@@ -4,7 +4,7 @@ Flutter 多教材点读应用。主入口为“书本 / 我的”双 Tab，采�
 
 历史版本 `v1.5.0` 发布多教材架构与主界面重构，应用正式更名为“小学英语点读”。
 
-`v1.7.0` 新增本地离线英语跟读：长按句子或点击麦克风进入录音，显示实时声浪、逐词绿／黄／红反馈及 0–100 跟读匹配分，支持课本原音／自录音 AB 试听和重练。评分依据识别文本与完整度，不能判断音素、重音或口音。完整更新见 [CHANGELOG.md](CHANGELOG.md)。
+`v1.7.1` 提供本地离线英语跟读，并通过模型与原生库的无损压缩适配码云附件上限。长按句子或点击麦克风进入录音，显示实时声浪、逐词绿／黄／红反馈及 0–100 跟读匹配分，支持课本原音／自录音 AB 试听和重练。评分依据识别文本与完整度，不能判断音素、重音或口音。完整更新见 [CHANGELOG.md](CHANGELOG.md)。
 
 湘少版三上资源包含 PDF 第 8–72 页（65 页，含复习、评价页），以及高清图片、英文热区、中文译文和单句／气泡离线 MP3。湘少版三下已列入书架，标记为“准备中”。
 
@@ -26,15 +26,15 @@ Flutter 多教材点读应用。主入口为“书本 / 我的”双 Tab，采�
 
 ## 下载与开源
 
-- [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.0/xiangshao-english-reader-v1.7.0-build8-arm64-v8a.apk)
-- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.0)
+- [码云：直接下载 ARM64 APK（无需登录）](https://gitee.com/wildfire666/xiangshao-english-reader/releases/download/v1.7.1/xiangshao-english-reader-v1.7.1-build9-arm64-v8a.apk)
+- [GitHub：下载 APK 与查看版本更新](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.1)
 - [AtomGit：历史版本下载](https://gitcode.com/gcw_rw0AAl7X/xiangshao-english-reader/releases)
 
 后续版本在 GitHub 和码云发布，每个平台使用一个公开仓库，同时提供源码与带版本号的安装包。AtomGit 保留历史版本，停止新增发布。原创应用代码采用 [MIT 许可证](LICENSE)，教材资源的许可范围见 [NOTICE.md](NOTICE.md)。
 
 应用仅在用户明确要求发布时上传正式新版本。日常更新先完成开发、测试并汇总待发布内容；源码提交或同步不自动触发 APK 发布。
 
-当前版本为 `1.7.0+8`，新增内置模型的离线跟读练习、动态录音权限、词级匹配反馈和 AB 试听，保留三种播放模式、暂停／继续与六档语速。已有正式版可直接覆盖安装，保留教材阅读进度和语速偏好；`1.4.0` 及以后版本可使用“检查更新”升级。更新入口位于“我的”，详见 [版本说明](releases/v1.7.0.md)。
+当前版本为 `1.7.1+9`，提供内置模型的离线跟读练习、动态录音权限、词级匹配反馈和 AB 试听，新增模型及原生库无损打包，保留三种播放模式、暂停／继续与六档语速。已有正式版可直接覆盖安装，保留教材阅读进度和语速偏好；`1.4.0` 及以后版本可使用“检查更新”升级。更新入口位于“我的”，详见 [版本说明](releases/v1.7.1.md)。
 
 单句资源包含 65 张正文图片、1,185 个点读条目和 MP3，722 条不同英文内容的翻译全部成功，清单没有空译文。单句音频通过豆包语音合成模型 2.0 的 V3 HTTP SSE API 生成，采用下表指定的六类固定角色音色；779 组不同的文本与音色参数复用于 1,185 个点读音频文件。旧音频已移至本地 `.asset-cache/previous-audio/`，不参与 Flutter 打包。六类角色的联网短句试音保留在 `build/tts-check/`。
 
@@ -292,9 +292,11 @@ flutter test
 
 `v1.7.0` 验证：351 项 Flutter 测试、148 项 Python 测试通过，`flutter analyze` 无问题；Android API 36 断网模拟器完成动态权限拒绝／重试授权、真实录音、15 秒保护、词级漏读反馈与 AB 试听。真实流式识别器短句五次停止到评分为 17.477–29.065ms，首次模型加载约 2.95 秒，均在独立 isolate 进行。未连接实体手机，不据此承诺所有机型或录音环境的速度与识别准确率。
 
+`v1.7.1` 补丁验证：367 项 Flutter 测试、151 项 Python 测试通过，`flutter analyze` 无问题；三个 ABI 正式 APK 构建完成，均小于 100 MiB，码云上传接受情况以实际验证为准。新补丁增加首次模型解压，首次准备耗时需独立测量，不能沿用 v1.7.0 直接复制模型时的 2.95 秒结果。
+
 ## Android 发布构建
 
-应用显示名称为“小学英语点读”，版本为 `1.7.0+8`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
+应用显示名称为“小学英语点读”，版本为 `1.7.1+9`。保留现有 applicationId `com.example.english_point_reading`。图标提取封面的“英语”标题元素，生成各密度标准图标和 Android 8+ 自适应图标；源图位于 `tools/icon_sources/`，不作为教材资源打包。
 
 ```powershell
 py -3.13 tools/prepare_launcher_icon.py
@@ -306,7 +308,7 @@ Release 开启 R8 代码压缩和资源缩减，使用独立发布签名；缺�
 
 新工作环境应恢复上述签名文件。仅在首次创建发布身份且两个文件均不存在时，可使用 `py -3.13 tools/create_release_signing.py --keytool <JDK目录>/bin/keytool.exe`；脚本使用随机密码且不在终端打印密码。
 
-本次 `1.7.0` 的交付文件为 `build/releases/v1.7.0/xiangshao-english-reader-v1.7.0-build8-arm64-v8a.apk`，ARM64 分包 versionCode 为 `2008`。大小：**125.89 MiB（132,008,066 字节）**；SHA-256：**`15e96ce090b72c00917985e973f540b421c7cdf1d755da366ed9150539c79df6`**。保留原正式签名、教材清单与离线资源，并内置约 70.04 MiB 的英文识别模型；私有配置、凭据和密钥不参与打包。
+本次 `1.7.1` 的交付文件为 `build/releases/v1.7.1/xiangshao-english-reader-v1.7.1-build9-arm64-v8a.apk`，ARM64 分包 versionCode 为 `2009`。大小：**98.34 MiB（103,119,027 字节）**；SHA-256：**`e81ec93514b522ef0192b04404021bf386ec3d15c47e3991ed6d3453f7e7f488`**。保留原正式签名、教材清单与离线资源；约 70.04 MiB 的完整英文模型以 XZ 无损压缩随 App 内置，原生库启用无损压缩。私有配置、凭据和密钥不参与打包。
 
 上述全架构构建命令还会生成 `app-armeabi-v7a-release.apk`（32 位 ARM）和 `app-x86_64-release.apk`（x86_64）。这些是签名后的 Release 安装包，尚未上传应用商店。现有调试版与发布版签名不同，不能直接覆盖安装；需先备份所需数据再卸载调试版，卸载会清除其阅读进度。
 
@@ -343,9 +345,9 @@ Gitee 的 `update.json` 作为应用内更新渠道。码云网页的部分下�
 
 公开发布必须核对 GitHub 和码云的源码版本标签与对应安装包，在无登录凭据的情况下分别验证公开仓库页面和附件下载链接，并重新下载 APK 比较 SHA-256；另核对 Gitee 最新版本 API 与更新清单。只有验证通过，才将该版本视为同步与公开发布完成。
 
-当前应用版本与说明为 [v1.7.0](releases/v1.7.0.md)，下载入口为 [GitHub v1.7.0 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.0) 和 [Gitee v1.7.0 Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases/v1.7.0)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.7.0/`。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；不覆盖已有版本标签，也不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
+当前应用版本与说明为 [v1.7.1](releases/v1.7.1.md)，下载入口为 [GitHub v1.7.1 Release](https://github.com/wildfirelh/xiangshao-english-reader/releases/tag/v1.7.1) 和 [Gitee v1.7.1 Release](https://gitee.com/wildfire666/xiangshao-english-reader/releases/v1.7.1)。发布脚本检查匿名访问与下载 SHA-256，并将结果记录在本地 `build/releases/v1.7.1/`。GitHub 已完成的 v1.7.0 发布保留为历史版本；该版 APK 超过码云 100 MB 附件上限，码云未完成的发布记录将在补丁准备就绪后清理，不向更新器提供不完整安装包。仅修改发布渠道、说明或发布脚本且 App 内容不变时，无需新增 App 版本；本次涉及本地模型解压和 Android 打包配置，因此新增补丁版本。不覆盖已有版本标签，不改写已发布的历史更新日志和 Release 内容。安装包本地归档、凭据与签名文件遵循现有忽略规则。
 
-## 本地离线跟读（v1.7.0）
+## 本地离线跟读（v1.7.1）
 
 长按课本句子，或点底栏麦克风选择当前页的一句话，打开跟读抽屉。先听标准音，
 点击麦克风开始录音，再点击停止评分；说话后静音 1.5 秒会自动停止，最长录音 15 秒。
@@ -365,8 +367,10 @@ py -3.13 tools/prepare_sherpa_model.py
 ```
 
 工具使用固定源版本和 SHA-256 校验，已有正确文件会跳过；模型元数据、来源和许可在
-`assets/models/sherpa/` 中。模型文件随 App 内置，首次打开跟读才复制到应用私有目录并
-在独立 isolate 加载，录音期间增量推理，减小录音结束后的处理耗时。
+`assets/models/sherpa/` 中。完整模型以 XZ 无损压缩随 App 内置，首次打开跟读才在独立
+isolate 解压到应用私有目录并核对原始文件 SHA-256；已有正确缓存直接复用。首次
+准备包含解压步骤，可能比直接复制耗时更长；加载和录音期间增量推理也在独立 isolate
+执行，减小录音结束后的处理耗时。运行时仍不下载模型，也不需要联网识别。
 
 **评分范围**：Sherpa 流式 Dart 接口没有词级置信度，仅提供识别文本、词元和时间戳。
 当前颜色与分数来自文本序列匹配及完整度，不是专业声学发音评测；无法判断音素、重音、
@@ -378,14 +382,15 @@ py -3.13 tools/prepare_sherpa_model.py
 停止到评分耗时。300ms 是性能目标，需要按设备实测；首次模型准备耗时单独记录，
 不能用文本对齐单元测试的耗时替代真实音频推理。
 
-已通过 351 项 Flutter 测试、148 项 Python 测试和静态分析。在没有默认网络的
+v1.7.0 原跟读实现已通过 351 项 Flutter 测试、148 项 Python 测试和静态分析。在没有默认网络的
 Android API 36 x86_64 模拟器中，真实 production worker 对 1.224 秒 `Good morning.`
 音频按实时 PCM 节奏识别，五次停止到评分为 29.065、17.477、22.745、22.711、19.952ms，
-均正确识别目标文本；纯静音为 0 分。首次模型加载约 2.95 秒，运行于独立 isolate。
+均正确识别目标文本；纯静音为 0 分。该版首次模型加载约 2.95 秒，运行于独立 isolate；
+此结果不包含 v1.7.1 新增加的 XZ 解压步骤。
 另已验证 Android 动态权限拒绝／重试授权、真实麦克风录音、15 秒自动结束、0 分结果
 与 AB 试听。未连接实体手机；此基准不代表所有机型、儿童声音或噪声环境。
 
-用户于 2026-10-05 明确授权发布本批次，版本为 `v1.7.0+8`；公开发布以完成正式包核对与两个渠道的匿名下载验证为准。后续新增改动继续等待下一次发布指令。
+用户于 2026-10-05 明确授权发布离线跟读批次，本次以 `v1.7.1+9` 完成必要的码云附件体积修复；公开发布以完成正式包核对与两个渠道的匿名下载验证为准。后续新增改动继续等待下一次发布指令。
 
 ## 系统音频中断
 
@@ -405,6 +410,6 @@ Android API 36 x86_64 模拟器中，真实 production worker 对 1.224 秒 `Goo
 py -3.13 tools/publish_gitee_release.py
 ```
 
-该命令同步同仓 `main` 和原有 annotated 标签，归档三个 ABI 安装包、上传并匿名完整下载核对每个 APK，最后上传 `update.json`，避免更新器看到未就绪的包。更新清单使用规范构建号 `8` 比较版本，分包 versionCode 分别为 `1008 / 2008 / 4008`。可通过 `--abi` 限定发布架构，或 `--prepare-only` 仅准备本地归档；归档与版本说明确定后不覆盖已有正式内容。
+该命令同步同仓 `main` 和原有 annotated 标签，归档三个 ABI 安装包、上传并匿名完整下载核对每个 APK，最后上传 `update.json`，避免更新器看到未就绪的包。更新清单使用规范构建号 `9` 比较版本，分包 versionCode 分别为 `1009 / 2009 / 4009`。可通过 `--abi` 限定发布架构，或 `--prepare-only` 仅准备本地归档；归档与版本说明确定后不覆盖已有正式内容。
 
 配置参考：[Flutter Android 发布指南](https://docs.flutter.dev/deployment/android)、[audio_session 文档](https://pub.dev/packages/audio_session/versions/0.1.25)、[flutter_launcher_icons 文档](https://pub.dev/packages/flutter_launcher_icons)。
