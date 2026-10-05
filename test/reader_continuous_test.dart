@@ -73,6 +73,17 @@ const _firstPage = TextbookPage(
   bubbles: [_firstBubble],
 );
 
+Future<void> tapPageAt(WidgetTester tester, Offset normalized) async {
+  final finder = find.byType(InteractiveTextbookPage).first;
+  final bounds = tester.getRect(finder);
+  final image = containedImageRect(bounds.size, const Size(3, 4));
+  await tester.tapAt(
+    bounds.topLeft +
+        image.topLeft +
+        Offset(image.width * normalized.dx, image.height * normalized.dy),
+  );
+}
+
 void main() {
   Future<AudioPlayerService> open(
     WidgetTester tester,
@@ -80,6 +91,7 @@ void main() {
     bool emptyPage = false,
     bool reduceMotion = false,
     bool startPlayback = true,
+    PlayMode mode = PlayMode.fullPage,
     TextbookPage firstPage = _firstPage,
     AudioInterruptionSource? interruptions,
     MemoryReadingProgressStore? progress,
@@ -91,29 +103,32 @@ void main() {
     addTearDown(service.dispose);
     await tester.pumpWidget(
       MaterialApp(
-        home: MediaQuery(
-          data: MediaQueryData(disableAnimations: reduceMotion),
-          child: TextbookReaderScreen(
-            audioPlayerService: service,
-            progressStore: progress ?? MemoryReadingProgressStore(),
-            book: Textbook(
-              bookId: 'test',
-              title: 'Test',
-              pages: [
-                firstPage,
-                if (emptyPage)
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(disableAnimations: reduceMotion),
+            child: TextbookReaderScreen(
+              audioPlayerService: service,
+              progressStore: progress ?? MemoryReadingProgressStore(),
+              book: Textbook(
+                bookId: 'test',
+                title: 'Test',
+                pages: [
+                  firstPage,
+                  if (emptyPage)
+                    const TextbookPage(
+                      pageIndex: 9,
+                      imagePath: '',
+                      sentences: [],
+                    ),
                   const TextbookPage(
-                    pageIndex: 9,
+                    pageIndex: 10,
                     imagePath: '',
-                    sentences: [],
+                    sentences: [_four, _three],
+                    bubbles: [_secondBubble, _thirdBubble],
                   ),
-                const TextbookPage(
-                  pageIndex: 10,
-                  imagePath: '',
-                  sentences: [_four, _three],
-                  bubbles: [_secondBubble, _thirdBubble],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -121,29 +136,328 @@ void main() {
     );
     await tester.pumpAndSettle();
     if (startPlayback) {
-      await tester.tap(find.text('单句点读'));
+      await tester.tap(find.byKey(const Key('playback-mode')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ValueKey('mode-option-${mode.name}')));
+      await tester.pumpAndSettle();
+      if (mode == PlayMode.sequential) {
+        // Start at the last child so one completion begins the page turn.
+        await tapPageAt(tester, const Offset(0.5, 0.52));
+        await tester.pumpAndSettle();
+      }
     }
     return service;
   }
 
-  Future<void> tapPageAt(WidgetTester tester, Offset normalized) async {
-    final finder = find.byType(InteractiveTextbookPage).first;
-    final bounds = tester.getRect(finder);
-    final image = containedImageRect(bounds.size, const Size(3, 4));
-    await tester.tapAt(
-      bounds.topLeft +
-          image.topLeft +
-          Offset(image.width * normalized.dx, image.height * normalized.dy),
-    );
+  Future<void> chooseMode(WidgetTester tester, PlayMode mode) async {
+    await tester.tap(find.byKey(const Key('playback-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('mode-option-${mode.name}')));
+    await tester.pumpAndSettle();
   }
 
+  testWidgets('sequential mode waits for a sentence with the requested hint', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend();
+    final service = await open(tester, backend, startPlayback: false);
+    await chooseMode(tester, PlayMode.sequential);
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.isPlaying, isFalse);
+    expect(backend.playedAssets, isEmpty);
+    expect(find.text('请点击任意文本，从此处开始顺序连读'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('playback-toggle')));
+    await tester.pump();
+    expect(backend.playedAssets, isEmpty);
+    await tapPageAt(tester, const Offset(0.5, 0.52));
+    await tester.pumpAndSettle();
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.currentSentenceId, 'two');
+    expect(backend.playedAssets, ['assets/two.mp3']);
+  });
+
   testWidgets(
-    'continuous button starts complete bubble audio and translation',
+    'full-page mode starts at the first bubble and stops at page end',
+    (tester) async {
+      final backend = FakeAudioBackend();
+      final service = await open(tester, backend, startPlayback: false);
+      await tapPageAt(tester, const Offset(0.5, 0.52));
+      await tester.pumpAndSettle();
+      expect(service.currentSentenceId, 'two');
+      await chooseMode(tester, PlayMode.fullPage);
+      expect(service.currentBubbleId, 'bubble-one');
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/bubble-one.mp3']);
+      backend.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      expect(service.currentMode, PlayMode.fullPage);
+      expect(service.isPlaying, isFalse);
+      expect(find.byKey(const Key('bubble-highlight')), findsNothing);
+      await tester.tap(find.byKey(const Key('playback-toggle')));
+      await tester.pumpAndSettle();
+      expect(service.currentBubbleId, 'bubble-one');
+      expect(backend.playedAssets.last, 'assets/bubble-one.mp3');
+    },
+  );
+
+  testWidgets('switching playing bubble to sequential starts its first child', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend();
+    final service = await open(tester, backend);
+    await chooseMode(tester, PlayMode.sequential);
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.currentSentenceId, 'one');
+    expect(backend.playedAssets, ['assets/bubble-one.mp3', 'assets/one.mp3']);
+    backend.complete();
+    await tester.pumpAndSettle();
+    expect(service.currentSentenceId, 'two');
+    expect(backend.playedAssets.last, 'assets/two.mp3');
+  });
+
+  testWidgets('switching a ducked bubble to sequential keeps the child quiet', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend()..volume = 0.6;
+    final interruptions = FakeInterruptions();
+    final service = await open(tester, backend, interruptions: interruptions);
+    interruptions.beginDuck();
+    await tester.pump();
+    expect(backend.volume, 0.25);
+    await chooseMode(tester, PlayMode.sequential);
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.currentSentenceId, 'one');
+    expect(find.text('顺序连读'), findsOneWidget);
+    expect(backend.playedAssets, ['assets/bubble-one.mp3', 'assets/one.mp3']);
+    expect(backend.playedVolumes, [0.6, 0.25]);
+    expect(backend.volume, 0.25);
+    interruptions.endDuck();
+    for (var step = 0; step < 6; step++) {
+      await tester.pump(const Duration(milliseconds: 30));
+    }
+    expect(backend.volume, closeTo(0.6, 0.0001));
+  });
+
+  testWidgets('sequential replay and choosing a new sentence keep the mode', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend();
+    final service = await open(tester, backend, mode: PlayMode.sequential);
+    await tester.tap(find.byTooltip('重听'));
+    await tester.pumpAndSettle();
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.currentSentenceId, 'two');
+    await tapPageAt(tester, const Offset(0.5, 0.36));
+    await tester.pumpAndSettle();
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.currentSentenceId, 'one');
+    backend.complete();
+    await tester.pumpAndSettle();
+    expect(service.currentSentenceId, 'two');
+    expect(backend.playedAssets, [
+      'assets/two.mp3',
+      'assets/two.mp3',
+      'assets/one.mp3',
+      'assets/two.mp3',
+    ]);
+  });
+
+  for (final mode in PlayMode.values) {
+    testWidgets('finger drag stops ${mode.name} before the page midpoint', (
+      tester,
+    ) async {
+      final backend = FakeAudioBackend();
+      final service = await open(
+        tester,
+        backend,
+        startPlayback: mode != PlayMode.single,
+        mode: mode,
+      );
+      if (mode == PlayMode.single) {
+        await tapPageAt(tester, const Offset(0.5, 0.36));
+        await tester.pumpAndSettle();
+      }
+      expect(service.isPlaying, isTrue);
+      final played = List<String>.of(backend.playedAssets);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PageView)),
+      );
+      await gesture.moveBy(const Offset(-60, 0));
+      await tester.pump();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      expect(service.isPlaying, isFalse);
+      expect(service.currentSentenceId, isNull);
+      expect(service.currentBubbleId, isNull);
+      expect(find.byKey(const Key('sentence-highlight')), findsNothing);
+      expect(find.byKey(const Key('bubble-highlight')), findsNothing);
+      backend.complete();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(backend.playedAssets, played);
+      expect(service.isPlaying, isFalse);
+    });
+  }
+
+  testWidgets('drag cancels loading so late load and completion cannot play', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+    final service = await open(tester, backend, startPlayback: false);
+    await tester.tap(find.byKey(const Key('playback-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mode-option-fullPage')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(service.isLoading, isTrue);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(PageView)),
+    );
+    await gesture.moveBy(const Offset(-60, 0));
+    await tester.pump();
+    expect(service.isLoading, isFalse);
+    expect(service.currentBubbleId, isNull);
+    backend.delayFirstLoad!.complete();
+    backend.complete();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(backend.playedAssets, isEmpty);
+    expect(service.isPlaying, isFalse);
+    expect(find.text('第 1 / 2 页'), findsOneWidget);
+  });
+
+  for (final mode in [PlayMode.fullPage, PlayMode.sequential]) {
+    testWidgets('${mode.name} pause keeps selection and resume reuses clip', (
+      tester,
+    ) async {
+      final backend = FakeAudioBackend();
+      final service = await open(tester, backend, mode: mode);
+      final assets = List<String>.of(backend.loadedAssets);
+      final sentence = service.currentSentenceId;
+      final bubble = service.currentBubbleId;
+      await tester.tap(find.byKey(const Key('playback-toggle')));
+      await tester.pumpAndSettle();
+      expect(service.isPlaying, isFalse);
+      expect(service.canResume, isTrue);
+      expect(service.currentSentenceId, sentence);
+      expect(service.currentBubbleId, bubble);
+      backend.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('playback-toggle')));
+      await tester.pumpAndSettle();
+      expect(service.isPlaying, isTrue);
+      expect(backend.loadedAssets, assets);
+      expect(service.currentSentenceId, sentence);
+      expect(service.currentBubbleId, bubble);
+    });
+  }
+
+  testWidgets('pause during auto-turn preserves the next page for resume', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend();
+    final service = await open(tester, backend, mode: PlayMode.sequential);
+    backend.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.byKey(const Key('playback-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('第 1 / 2 页'), findsOneWidget);
+    expect(service.isPlaying, isFalse);
+    expect(backend.playedAssets, ['assets/two.mp3']);
+    backend.complete();
+    await tester.pumpAndSettle();
+    expect(backend.playedAssets, ['assets/two.mp3']);
+    await tester.tap(find.byKey(const Key('playback-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('第 2 / 2 页'), findsOneWidget);
+    expect(service.currentSentenceId, 'three');
+    expect(backend.playedAssets, ['assets/two.mp3', 'assets/three.mp3']);
+  });
+
+  testWidgets(
+    'backgrounding auto-turn waits for explicit resume at next page',
+    (tester) async {
+      final backend = FakeAudioBackend();
+      final service = await open(tester, backend, mode: PlayMode.sequential);
+      backend.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pumpAndSettle();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(service.isPlaying, isFalse);
+      expect(backend.playedAssets, ['assets/two.mp3']);
+      await tester.tap(find.byKey(const Key('playback-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.text('第 2 / 2 页'), findsOneWidget);
+      expect(service.currentSentenceId, 'three');
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/three.mp3']);
+    },
+  );
+
+  testWidgets(
+    'focus pause during auto-turn waits for explicit next-page resume',
+    (tester) async {
+      final backend = FakeAudioBackend();
+      final interruptions = FakeInterruptions();
+      final service = await open(
+        tester,
+        backend,
+        mode: PlayMode.sequential,
+        interruptions: interruptions,
+      );
+      backend.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      interruptions.beginPause();
+      await tester.pumpAndSettle();
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      expect(service.isPlaying, isFalse);
+      expect(backend.playedAssets, ['assets/two.mp3']);
+      interruptions.endPause();
+      await tester.pumpAndSettle();
+      expect(backend.playedAssets, ['assets/two.mp3']);
+      await tester.tap(find.byKey(const Key('playback-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.text('第 2 / 2 页'), findsOneWidget);
+      expect(service.currentSentenceId, 'three');
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/three.mp3']);
+    },
+  );
+
+  testWidgets('choosing sequential while an asset loads cancels it and waits', (
+    tester,
+  ) async {
+    final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+    final service = await open(tester, backend, startPlayback: false);
+    await tester.tap(find.byKey(const Key('playback-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mode-option-fullPage')));
+    await tester.pumpAndSettle();
+    expect(service.isLoading, isTrue);
+    await chooseMode(tester, PlayMode.sequential);
+    expect(service.currentMode, PlayMode.sequential);
+    expect(service.isLoading, isFalse);
+    expect(service.currentBubbleId, isNull);
+    expect(service.currentSentenceId, isNull);
+    expect(find.text('请点击任意文本，从此处开始顺序连读'), findsOneWidget);
+    backend.delayFirstLoad!.complete();
+    await tester.pumpAndSettle();
+    expect(backend.playedAssets, isEmpty);
+    await tapPageAt(tester, const Offset(0.5, 0.52));
+    await tester.pumpAndSettle();
+    expect(service.currentSentenceId, 'two');
+    expect(backend.playedAssets, ['assets/two.mp3']);
+  });
+
+  testWidgets(
+    'full-page selection starts complete first bubble audio and translation',
     (tester) async {
       final backend = FakeAudioBackend();
       final service = await open(tester, backend);
-      expect(service.currentMode, PlayMode.continuous);
+      expect(service.currentMode, PlayMode.fullPage);
       expect(service.currentBubbleId, 'bubble-one');
       expect(service.currentSentenceId, isNull);
       expect(backend.playedAssets, ['assets/bubble-one.mp3']);
@@ -204,7 +518,9 @@ void main() {
   ) async {
     final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
     final service = await open(tester, backend, startPlayback: false);
-    await tester.tap(find.text('单句点读'));
+    await tester.tap(find.byKey(const Key('playback-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mode-option-fullPage')));
     await tester.pump();
     expect(backend.loadedAssets, ['assets/bubble-one.mp3']);
     await tapPageAt(tester, const Offset(0.5, 0.52));
@@ -325,16 +641,16 @@ void main() {
     'a tap during automatic animation stops it and keeps the selected sentence',
     (tester) async {
       final backend = FakeAudioBackend();
-      final service = await open(tester, backend);
+      final service = await open(tester, backend, mode: PlayMode.sequential);
       backend.complete();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 80));
       await tapPageAt(tester, const Offset(0.75, 0.36));
       await tester.pumpAndSettle();
       expect(find.text('第 1 / 2 页'), findsOneWidget);
-      expect(service.currentMode, PlayMode.single);
+      expect(service.currentMode, PlayMode.sequential);
       expect(service.currentSentenceId, 'one');
-      expect(backend.playedAssets, ['assets/bubble-one.mp3', 'assets/one.mp3']);
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/one.mp3']);
     },
   );
 
@@ -349,6 +665,7 @@ void main() {
         backend,
         interruptions: interruptions,
         progress: progress,
+        mode: PlayMode.sequential,
       );
       interruptions.beginDuck();
       await tester.pump();
@@ -360,10 +677,10 @@ void main() {
       await tapPageAt(tester, const Offset(0.79, 0.36));
       await tester.pumpAndSettle();
       expect(find.text('第 1 / 2 页'), findsOneWidget);
-      expect(service.currentMode, PlayMode.single);
+      expect(service.currentMode, PlayMode.sequential);
       expect(service.currentSentenceId, 'one');
       expect(progress.pages['test'], 8);
-      expect(backend.playedAssets, ['assets/bubble-one.mp3', 'assets/one.mp3']);
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/one.mp3']);
       expect(backend.playedVolumes, [0.6, 0.25]);
       expect(backend.volume, 0.25);
       interruptions.endDuck();
@@ -375,33 +692,33 @@ void main() {
   );
 
   testWidgets(
-    'auto-turn plays bubbles in sequence, keeps speed, and ends at book end',
+    'sequential auto-turn plays child sentences, keeps speed, and ends at book end',
     (tester) async {
       final backend = FakeAudioBackend();
-      final service = await open(tester, backend);
+      final service = await open(tester, backend, mode: PlayMode.sequential);
       await service.setSpeed(0.8);
       await tester.pumpAndSettle();
       expect(find.text('0.8x'), findsOneWidget);
       backend.complete();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 120));
-      expect(backend.playedAssets, ['assets/bubble-one.mp3']);
+      expect(backend.playedAssets, ['assets/two.mp3']);
       await tester.pumpAndSettle();
       expect(find.text('第 2 / 2 页'), findsOneWidget);
-      expect(service.currentMode, PlayMode.continuous);
-      expect(service.currentBubbleId, 'bubble-two');
+      expect(service.currentMode, PlayMode.sequential);
+      expect(service.currentSentenceId, 'three');
       expect(backend.playedSpeeds.last, 0.8);
       backend.complete();
       await tester.pumpAndSettle();
-      expect(service.currentBubbleId, 'bubble-three');
+      expect(service.currentSentenceId, 'four');
       backend.complete();
       await tester.pumpAndSettle();
       expect(service.isPlaying, isFalse);
-      expect(service.currentBubbleId, isNull);
+      expect(service.currentSentenceId, isNull);
       expect(backend.playedAssets, [
-        'assets/bubble-one.mp3',
-        'assets/bubble-two.mp3',
-        'assets/bubble-three.mp3',
+        'assets/two.mp3',
+        'assets/three.mp3',
+        'assets/four.mp3',
       ]);
     },
   );
@@ -410,50 +727,63 @@ void main() {
     tester,
   ) async {
     final backend = FakeAudioBackend();
-    final service = await open(tester, backend);
+    final service = await open(tester, backend, mode: PlayMode.sequential);
     backend.complete();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 80));
-    await tester.tap(find.text('整页连读'));
+    await tester.tap(find.byKey(const Key('playback-mode')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 180));
+    await tester.tap(find.byKey(const ValueKey('mode-option-single')));
     await tester.pumpAndSettle();
     expect(service.currentMode, PlayMode.single);
-    expect(backend.playedAssets, ['assets/bubble-one.mp3']);
+    expect(backend.playedAssets, ['assets/two.mp3']);
   });
 
   testWidgets('manual previous-page navigation cancels automatic playback', (
     tester,
   ) async {
     final backend = FakeAudioBackend();
-    final service = await open(tester, backend);
+    final service = await open(tester, backend, mode: PlayMode.sequential);
     backend.complete();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.text('上一页'));
     await tester.pumpAndSettle();
     expect(find.text('第 1 / 2 页'), findsOneWidget);
-    expect(service.currentBubbleId, isNull);
-    expect(backend.playedAssets, ['assets/bubble-one.mp3']);
+    expect(service.currentSentenceId, isNull);
+    expect(backend.playedAssets, ['assets/two.mp3']);
   });
 
   testWidgets('image-only pages are skipped without canceling continuation', (
     tester,
   ) async {
     final backend = FakeAudioBackend();
-    final service = await open(tester, backend, emptyPage: true);
+    final service = await open(
+      tester,
+      backend,
+      emptyPage: true,
+      mode: PlayMode.sequential,
+    );
     backend.complete();
     await tester.pumpAndSettle();
     expect(find.text('第 3 / 3 页'), findsOneWidget);
-    expect(service.currentBubbleId, 'bubble-two');
+    expect(service.currentSentenceId, 'three');
   });
 
   testWidgets(
-    'reduced motion advances and shows full bubble without a border',
+    'reduced motion advances and shows the precise sentence without a border',
     (tester) async {
       final backend = FakeAudioBackend();
-      final service = await open(tester, backend, reduceMotion: true);
+      final service = await open(
+        tester,
+        backend,
+        reduceMotion: true,
+        mode: PlayMode.sequential,
+      );
       backend.complete();
       await tester.pumpAndSettle();
-      expect(service.currentBubbleId, 'bubble-two');
+      expect(service.currentSentenceId, 'three');
       final animation = tester.widget<TweenAnimationBuilder<double>>(
         find
             .descendant(
@@ -464,7 +794,7 @@ void main() {
       );
       expect(animation.duration, Duration.zero);
       final highlight = tester.widget<DecoratedBox>(
-        find.byKey(const Key('bubble-highlight')),
+        find.byKey(const Key('sentence-highlight')),
       );
       final decoration = highlight.decoration as BoxDecoration;
       expect(decoration.border, isNull);

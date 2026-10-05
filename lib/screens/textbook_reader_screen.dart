@@ -82,12 +82,16 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   bool? _reminderWanted;
   PagePlaybackCompletion? _autoCompletion;
   int? _autoTarget;
+  int? _pausedAutoTarget;
   final _pageKeys = <int, GlobalKey<InteractiveTextbookPageState>>{};
   bool _handledScrollingTap = false;
   PointSentence? _scrollTapSentence;
   int? _scrollTapPage;
   int? _scrollTapPointer;
   Offset? _scrollTapPosition;
+  int? _pagePointer;
+  Offset? _pagePointerDownPosition;
+  bool _manualDragStopped = false;
 
   int _pageIndex = 0;
   bool _isTranslationEnabled = true;
@@ -119,10 +123,11 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _isForeground = state == AppLifecycleState.resumed;
     _configureEyeReminder();
-    _audio.setForeground(state == AppLifecycleState.resumed);
     if (state != AppLifecycleState.resumed) {
-      _cancelAutoAdvance(settlePage: true);
+      _pausedAutoTarget = _autoTarget ?? _pausedAutoTarget;
+      _cancelAutoAdvance(settlePage: true, clearPaused: false);
     }
+    _audio.setForeground(state == AppLifecycleState.resumed);
   }
 
   Future<void> _recordPointRead() async {
@@ -190,6 +195,10 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   void _onAudioChanged() {
+    if (_audio.isPaused && _autoTarget != null) {
+      _pausedAutoTarget = _autoTarget;
+      _cancelAutoAdvance(settlePage: true, clearPaused: false);
+    }
     if (mounted) setState(() {});
   }
 
@@ -240,11 +249,13 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   Future<void> _onSentenceTap(PointSentence sentence, {int? pageIndex}) async {
-    // A deliberate page tap always wins over playback, loading and an animated
-    // automatic page turn. Apply the mode before any asynchronous work.
+    // A deliberate page tap chooses a new start immediately, including while
+    // a previous clip is loading or the page is turning automatically.
     final tappedPageIndex = pageIndex ?? _pageIndex;
     final pageChanged = _pageIndex != tappedPageIndex;
-    _audio.setPlayMode(PlayMode.single);
+    final sequential = _audio.currentMode == PlayMode.sequential;
+    if (sequential) ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (!sequential) _audio.setPlayMode(PlayMode.single);
     _cancelAutoAdvance();
     setState(() {
       _pageIndex = tappedPageIndex;
@@ -265,10 +276,17 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
       return;
     }
     try {
-      await _audio.playSentence(
-        pageSentences: _pages[tappedPageIndex].sentences,
-        targetSentence: sentence,
-      );
+      if (sequential) {
+        await _audio.playSequential(
+          page: _pages[tappedPageIndex],
+          targetSentence: sentence,
+        );
+      } else {
+        await _audio.playSentence(
+          pageSentences: _pages[tappedPageIndex].sentences,
+          targetSentence: sentence,
+        );
+      }
     } catch (_) {
       if (!mounted || _pageIndex != tappedPageIndex) return;
       setState(() => _previewSentence = sentence);
@@ -277,6 +295,9 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   void _onPagePointerDown(PointerDownEvent event) {
+    _pagePointer = event.pointer;
+    _pagePointerDownPosition = event.position;
+    _manualDragStopped = false;
     _handledScrollingTap = false;
     _scrollTapSentence = null;
     if (_pageController?.hasClients != true) return;
@@ -306,6 +327,8 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   void _onPagePointerUp(PointerUpEvent event) {
+    _pagePointer = null;
+    _pagePointerDownPosition = null;
     final sentence = _scrollTapSentence;
     if (sentence != null &&
         event.pointer == _scrollTapPointer &&
@@ -317,11 +340,26 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   }
 
   void _onPagePointerMove(PointerMoveEvent event) {
+    if (event.pointer == _pagePointer &&
+        (event.position.dx - _pagePointerDownPosition!.dx).abs() > kTouchSlop) {
+      _stopForManualPageDrag();
+    }
     if (_scrollTapSentence != null &&
         event.pointer == _scrollTapPointer &&
         (event.position - _scrollTapPosition!).distance > kTouchSlop) {
       _scrollTapSentence = null;
     }
+  }
+
+  void _stopForManualPageDrag() {
+    if (_manualDragStopped) return;
+    _manualDragStopped = true;
+    _cancelAutoAdvance();
+    unawaited(_audio.stop());
+    setState(() {
+      _previewSentence = null;
+      _dismissedTranslationId = null;
+    });
   }
 
   void _showAudioNotice() {
@@ -342,38 +380,58 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     );
   }
 
-  void _cancelAutoAdvance({bool settlePage = false}) {
+  void _cancelAutoAdvance({bool settlePage = false, bool clearPaused = true}) {
     final wasAdvancing = _autoCompletion != null;
     _autoCompletion = null;
     _autoTarget = null;
+    if (clearPaused) _pausedAutoTarget = null;
     if (settlePage && wasAdvancing && _pageController?.hasClients == true) {
       _pageController!.jumpToPage(_pageIndex);
     }
   }
 
   Future<void> _setPlayMode(PlayMode mode) async {
+    final wasPlaying = _audio.isPlaying;
+    final selected = _activeSentence ?? _firstSentenceOf(_activeBubble);
     _cancelAutoAdvance(settlePage: true);
     if (mode == PlayMode.single) {
       _audio.setPlayMode(mode);
       unawaited(_audio.stop());
       return;
     }
-    await _playContinuousPage();
+    if (mode == PlayMode.fullPage) {
+      await _playFullPage();
+      return;
+    }
+    // Mode selection cancels the previous queue while preserving an active duck
+    // for the clip that follows immediately.
+    _audio.setPlayMode(PlayMode.sequential);
+    setState(() {
+      _previewSentence = null;
+      _dismissedTranslationId = null;
+    });
+    if (wasPlaying && selected != null) {
+      await _playSequentialPage(targetSentence: selected);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('请点击任意文本，从此处开始顺序连读')));
+    }
   }
 
-  Future<void> _playContinuousPage({DialogueBubble? targetBubble}) async {
-    final index = _pageIndex;
-    final page = _pages[index];
-    final selected = _activeSentence;
-    targetBubble ??= _activeBubble;
-    if (targetBubble == null && selected != null) {
-      for (final bubble in page.playbackBubbles) {
-        if (bubble.sentenceIds.contains(selected.id)) {
-          targetBubble = bubble;
-          break;
-        }
+  PointSentence? _firstSentenceOf(DialogueBubble? bubble) {
+    if (bubble == null) return null;
+    for (final id in bubble.sentenceIds) {
+      for (final sentence in _pages[_pageIndex].sentences) {
+        if (sentence.id == id) return sentence;
       }
     }
+    return null;
+  }
+
+  Future<void> _playFullPage({DialogueBubble? targetBubble}) async {
+    final index = _pageIndex;
+    final page = _pages[index];
     setState(() {
       _previewSentence = null;
       _dismissedTranslationId = null;
@@ -383,6 +441,54 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     } catch (_) {
       if (!mounted || _pageIndex != index) return;
       _showAudioNotice();
+    }
+  }
+
+  Future<void> _playSequentialPage({PointSentence? targetSentence}) async {
+    final index = _pageIndex;
+    setState(() {
+      _previewSentence = null;
+      _dismissedTranslationId = null;
+    });
+    try {
+      await _audio.playSequential(
+        page: _pages[index],
+        targetSentence: targetSentence,
+      );
+    } catch (_) {
+      if (!mounted || _pageIndex != index) return;
+      _showAudioNotice();
+    }
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_audio.isPlaying || _audio.isLoading || _autoTarget != null) {
+      _pausedAutoTarget = _autoTarget;
+      _cancelAutoAdvance(settlePage: true, clearPaused: false);
+      await _audio.pause();
+      if (mounted) setState(() {});
+      return;
+    }
+    if (_pausedAutoTarget case final target?) {
+      _pausedAutoTarget = null;
+      setState(() {
+        _pageIndex = target;
+        _previewSentence = null;
+        _dismissedTranslationId = null;
+      });
+      _pageController?.jumpToPage(target);
+      unawaited(_saveProgress(target));
+      await _playSequentialPage();
+      return;
+    }
+    try {
+      if (_audio.canResume) {
+        await _audio.resume();
+      } else if (_audio.currentMode == PlayMode.fullPage) {
+        await _playFullPage();
+      }
+    } catch (_) {
+      if (mounted) _showAudioNotice();
     }
   }
 
@@ -400,9 +506,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     if (!mounted ||
         _restoring ||
         !_audio.canContinue(completion) ||
-        completion.pageIndex != _pages[_pageIndex].pageIndex ||
-        completion.lastBubbleId !=
-            _pages[_pageIndex].playbackBubbles.lastOrNull?.id) {
+        completion.pageIndex != _pages[_pageIndex].pageIndex) {
       return;
     }
     var next = _pageIndex + 1;
@@ -411,8 +515,10 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
       next++;
     }
     if (next >= _pages.length || _pageController?.hasClients != true) return;
-    _autoCompletion = completion;
-    _autoTarget = next;
+    setState(() {
+      _autoCompletion = completion;
+      _autoTarget = next;
+    });
     try {
       if (MediaQuery.disableAnimationsOf(context)) {
         _pageController!.jumpToPage(next);
@@ -430,9 +536,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
         return;
       }
       _cancelAutoAdvance();
-      await _playContinuousPage(
-        targetBubble: _pages[next].playbackBubbles.first,
-      );
+      await _playSequentialPage();
     } finally {
       if (_autoCompletion == completion) _cancelAutoAdvance();
     }
@@ -565,9 +669,20 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                       child: NotificationListener<ScrollStartNotification>(
                         onNotification: (notification) {
                           if (notification.dragDetails != null &&
-                              _autoCompletion != null) {
-                            _cancelAutoAdvance();
-                            unawaited(_audio.stop());
+                              notification.depth == 0 &&
+                              notification.metrics.axis == Axis.horizontal) {
+                            // A driven PageView may accept a stationary tap as
+                            // a drag after pointer-up. Actual finger movement
+                            // stops sound immediately, including on this page.
+                            final down = _pagePointerDownPosition;
+                            if (_pagePointer != null &&
+                                down != null &&
+                                (notification.dragDetails!.globalPosition.dx -
+                                            down.dx)
+                                        .abs() >
+                                    kTouchSlop) {
+                              _stopForManualPageDrag();
+                            }
                           }
                           return false;
                         },
@@ -577,6 +692,8 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                           onPointerMove: _onPagePointerMove,
                           onPointerUp: _onPagePointerUp,
                           onPointerCancel: (_) {
+                            _pagePointer = null;
+                            _pagePointerDownPosition = null;
                             _scrollTapSentence = null;
                             _handledScrollingTap = false;
                           },
@@ -649,6 +766,14 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
           onModeChanged: _setPlayMode,
           currentSpeed: _audio.currentSpeed,
           onSpeedChanged: _setSpeed,
+          isPlaying: _audio.isPlaying || _autoTarget != null,
+          isLoading: _audio.isLoading,
+          canResume:
+              _audio.canResume ||
+              _pausedAutoTarget != null ||
+              (_audio.currentMode == PlayMode.fullPage &&
+                  _pages[_pageIndex].playbackBubbles.isNotEmpty),
+          onPlaybackToggle: _togglePlayback,
           isTranslationEnabled: _isTranslationEnabled,
           onTranslationChanged: (value) {
             setState(() => _isTranslationEnabled = value);
@@ -658,7 +783,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
               ? null
               : activeBubble,
           onReplay: activeBubble != null
-              ? () => _playContinuousPage(targetBubble: activeBubble)
+              ? () => _playFullPage(targetBubble: activeBubble)
               : active == null
               ? null
               : () => _onSentenceTap(active),

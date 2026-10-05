@@ -14,6 +14,10 @@ class TextbookBottomBar extends StatelessWidget {
     this.activeBubble,
     this.currentSpeed = 1.0,
     this.onSpeedChanged,
+    this.isPlaying = false,
+    this.canResume = false,
+    this.isLoading = false,
+    this.onPlaybackToggle,
     this.onReplay,
     this.onDismissTranslation,
   });
@@ -26,24 +30,64 @@ class TextbookBottomBar extends StatelessWidget {
   final DialogueBubble? activeBubble;
   final double currentSpeed;
   final ValueChanged<double>? onSpeedChanged;
+  final bool isPlaying;
+  final bool canResume;
+  final bool isLoading;
+  final VoidCallback? onPlaybackToggle;
   final VoidCallback? onReplay;
   final VoidCallback? onDismissTranslation;
 
   static String _speedLabel(double speed) => '${speed.toStringAsFixed(1)}x';
 
-  void _cycleSpeed() {
-    final speeds = AudioPlayerService.supportedSpeeds;
-    final index = speeds.indexOf(currentSpeed);
-    onSpeedChanged?.call(speeds[(index + 1) % speeds.length]);
-  }
+  static String _modeLabel(PlayMode mode) => switch (mode) {
+    PlayMode.single => '单句点读',
+    PlayMode.fullPage => '整页连读',
+    PlayMode.sequential => '顺序连读',
+  };
 
-  Future<void> _chooseSpeed(BuildContext context) async {
-    var selected = false;
-    final speed = await showModalBottomSheet<double>(
+  static String _modeDescription(PlayMode mode) => switch (mode) {
+    PlayMode.single => '点击任意句子独立朗读，适合精读练习',
+    PlayMode.fullPage => '从当前页第一句开始，完整朗读至末尾',
+    PlayMode.sequential => '点击任意句子作为起点，顺次连续向后朗读',
+  };
+
+  static IconData _modeIcon(PlayMode mode) => switch (mode) {
+    PlayMode.single => Icons.touch_app_outlined,
+    PlayMode.fullPage => Icons.playlist_play,
+    PlayMode.sequential => Icons.format_list_numbered,
+  };
+
+  static String _speedDescription(double speed) => switch (speed) {
+    0.5 => '慢速跟读',
+    0.8 => '清晰磨耳朵',
+    1.0 => '标准语速',
+    1.2 => '稍快复习',
+    1.5 => '快速听力',
+    2.0 => '极速浏览',
+    _ => '',
+  };
+
+  Future<T?> _showSelectionSheet<T>(
+    BuildContext context, {
+    required String title,
+    required String closeLabel,
+    required T currentValue,
+    required List<_SelectionOption<T>> options,
+  }) {
+    var dismissed = false;
+    return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
       sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
           ? AnimationStyle.noAnimation
           : null,
@@ -58,42 +102,61 @@ class TextbookBottomBar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '选择播放语速',
+                      title,
                       style: Theme.of(sheetContext).textTheme.titleLarge,
                     ),
                   ),
                   IconButton(
-                    tooltip: '关闭语速选择',
-                    onPressed: () => Navigator.pop(sheetContext),
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    tooltip: closeLabel,
+                    onPressed: () {
+                      if (dismissed ||
+                          ModalRoute.of(sheetContext)?.isCurrent != true) {
+                        return;
+                      }
+                      dismissed = true;
+                      Navigator.pop(sheetContext);
+                    },
                     icon: const Icon(Icons.close),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              for (final value in AudioPlayerService.supportedSpeeds)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
+              for (final option in options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: ListTile(
-                    key: ValueKey('speed-option-${_speedLabel(value)}'),
+                    key: option.key,
+                    minTileHeight: 48,
+                    minVerticalPadding: 12,
                     title: Text(
-                      _speedLabel(value),
+                      option.label,
                       semanticsLabel:
-                          '播放语速 ${_speedLabel(value)}${value == currentSpeed ? '，当前选中' : ''}',
+                          '${option.semanticLabel}'
+                          '${option.value == currentValue ? '，当前选中' : ''}',
                     ),
-                    selected: value == currentSpeed,
+                    subtitle: Text(option.description),
+                    selected: option.value == currentValue,
+                    selectedColor: Theme.of(sheetContext).colorScheme.primary,
                     selectedTileColor: Theme.of(sheetContext)
                         .colorScheme
                         .secondaryContainer,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    trailing: value == currentSpeed
+                    trailing: option.value == currentValue
                         ? const Icon(Icons.check)
                         : null,
                     onTap: () {
-                      if (selected) return;
-                      selected = true;
-                      Navigator.pop(sheetContext, value);
+                      if (dismissed ||
+                          ModalRoute.of(sheetContext)?.isCurrent != true) {
+                        return;
+                      }
+                      dismissed = true;
+                      Navigator.pop(sheetContext, option.value);
                     },
                   ),
                 ),
@@ -101,6 +164,47 @@ class TextbookBottomBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _chooseMode(BuildContext context) async {
+    final mode = await _showSelectionSheet<PlayMode>(
+      context,
+      title: '选择点读模式',
+      closeLabel: '关闭模式选择',
+      currentValue: currentMode,
+      options: [
+        for (final mode in PlayMode.values)
+          _SelectionOption(
+            value: mode,
+            key: ValueKey('mode-option-${mode.name}'),
+            label: _modeLabel(mode),
+            semanticLabel: '点读模式 ${_modeLabel(mode)}',
+            description: _modeDescription(mode),
+          ),
+      ],
+    );
+    if (context.mounted && mode != null && mode != currentMode) {
+      onModeChanged(mode);
+    }
+  }
+
+  Future<void> _chooseSpeed(BuildContext context) async {
+    final speed = await _showSelectionSheet<double>(
+      context,
+      title: '选择播放语速',
+      closeLabel: '关闭语速选择',
+      currentValue: currentSpeed,
+      options: [
+        for (final speed in AudioPlayerService.supportedSpeeds)
+          _SelectionOption(
+            value: speed,
+            key: ValueKey('speed-option-${_speedLabel(speed)}'),
+            label: _speedLabel(speed),
+            semanticLabel: '播放语速 ${_speedLabel(speed)}',
+            description: _speedDescription(speed),
+          ),
+      ],
     );
     if (context.mounted && speed != null && speed != currentSpeed) {
       onSpeedChanged?.call(speed);
@@ -175,42 +279,38 @@ class TextbookBottomBar extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final modeButton = OutlinedButton.icon(
+                    key: const Key('playback-mode'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    onPressed: () => onModeChanged(
-                      currentMode == PlayMode.single
-                          ? PlayMode.continuous
-                          : PlayMode.single,
-                    ),
-                    icon: Icon(
-                      currentMode == PlayMode.single
-                          ? Icons.play_arrow
-                          : Icons.playlist_play,
-                    ),
+                    onPressed: () => _chooseMode(context),
+                    icon: Icon(_modeIcon(currentMode)),
                     label: Text(
-                      currentMode == PlayMode.single ? '单句点读' : '整页连读',
+                      _modeLabel(currentMode),
+                      semanticsLabel: '播放模式 ${_modeLabel(currentMode)}，点击选择模式',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   );
                   final speedButton = Tooltip(
-                    message: '语速 ${_speedLabel(currentSpeed)}，点击切换下一档；长按选择语速',
+                    message: '语速 ${_speedLabel(currentSpeed)}，点击选择语速',
                     child: TextButton(
                       key: const Key('playback-speed'),
                       style: TextButton.styleFrom(
                         minimumSize: const Size(64, 48),
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
-                      onPressed: onSpeedChanged == null ? null : _cycleSpeed,
+                      onPressed: onSpeedChanged == null
+                          ? null
+                          : () => _chooseSpeed(context),
                       onLongPress: onSpeedChanged == null
                           ? null
                           : () => _chooseSpeed(context),
                       child: Text(
                         _speedLabel(currentSpeed),
                         semanticsLabel:
-                            '播放语速 ${_speedLabel(currentSpeed)}，点击切换下一档，长按选择语速',
+                            '播放语速 ${_speedLabel(currentSpeed)}，点击选择语速',
                       ),
                     ),
                   );
@@ -241,13 +341,52 @@ class TextbookBottomBar extends StatelessWidget {
                     },
                     icon: const Icon(Icons.mic),
                   );
+                  final showPlayback = currentMode != PlayMode.single;
+                  final showPause = isPlaying || isLoading;
+                  final playbackEnabled =
+                      onPlaybackToggle != null && (showPause || canResume);
+                  final playbackButton = Semantics(
+                    label: showPause ? '暂停连读' : '播放连读',
+                    button: true,
+                    enabled: playbackEnabled,
+                    excludeSemantics: true,
+                    onTap: playbackEnabled ? onPlaybackToggle : null,
+                    hint: !playbackEnabled && currentMode == PlayMode.sequential
+                        ? '点击任意句子开始顺序连读'
+                        : null,
+                    child: SizedBox.square(
+                      dimension: 56,
+                      child: IconButton(
+                        key: const Key('playback-toggle'),
+                        tooltip: showPause ? '暂停连读' : '播放连读',
+                        iconSize: 48,
+                        padding: EdgeInsets.zero,
+                        color: colors.primary,
+                        onPressed: playbackEnabled ? onPlaybackToggle : null,
+                        icon: Icon(
+                          showPause
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
+                        ),
+                      ),
+                    ),
+                  );
                   final largeText =
                       MediaQuery.textScalerOf(context).scale(14) > 18;
-                  if (constraints.maxWidth < 340 || largeText) {
+                  if (constraints.maxWidth < (showPlayback ? 440 : 340) ||
+                      largeText) {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        modeButton,
+                        Row(
+                          children: [
+                            Expanded(child: modeButton),
+                            if (showPlayback) ...[
+                              const SizedBox(width: 8),
+                              playbackButton,
+                            ],
+                          ],
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -265,6 +404,10 @@ class TextbookBottomBar extends StatelessWidget {
                   return Row(
                     children: [
                       Expanded(child: modeButton),
+                      if (showPlayback) ...[
+                        const SizedBox(width: 8),
+                        playbackButton,
+                      ],
                       const SizedBox(width: 8),
                       speedButton,
                       const SizedBox(width: 8),
@@ -281,4 +424,20 @@ class TextbookBottomBar extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SelectionOption<T> {
+  const _SelectionOption({
+    required this.value,
+    required this.key,
+    required this.label,
+    required this.semanticLabel,
+    required this.description,
+  });
+
+  final T value;
+  final Key key;
+  final String label;
+  final String semanticLabel;
+  final String description;
 }

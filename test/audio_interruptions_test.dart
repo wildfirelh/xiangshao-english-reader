@@ -41,6 +41,59 @@ class FakeInterruptions implements AudioInterruptionSource {
 }
 
 void main() {
+  test(
+    'focus pause resumes the same sequential clip only on explicit request',
+    () async {
+      final backend = FakeAudioBackend();
+      final interruptions = FakeInterruptions();
+      final service = AudioPlayerService(
+        backend: backend,
+        interruptionSource: interruptions,
+      );
+      addTearDown(service.dispose);
+      await service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences[1],
+      );
+      interruptions.beginPause();
+      expect(service.isPlaying, isFalse);
+      expect(service.currentSentenceId, 'two');
+      expect(service.currentMode, PlayMode.sequential);
+      interruptions.endPause();
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.playedAssets, ['assets/two.mp3']);
+      expect(service.canResume, isTrue);
+      await service.resume();
+      expect(backend.loadedAssets, ['assets/two.mp3']);
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/two.mp3']);
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(service.currentSentenceId, 'three');
+      expect(backend.playedAssets.last, 'assets/three.mp3');
+    },
+  );
+
+  test(
+    'background blocks explicit resume until the reader returns to foreground',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      await service.playPage(page: bubblePage);
+      service.setForeground(false);
+      await service.resume();
+      expect(service.isPlaying, isFalse);
+      expect(service.currentBubbleId, 'bubble-one');
+      expect(backend.playedAssets, hasLength(1));
+      service.setForeground(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.playedAssets, hasLength(1));
+      await service.resume();
+      expect(backend.loadedAssets, ['assets/bubble-one.mp3']);
+      expect(service.isPlaying, isTrue);
+    },
+  );
+
   test('interruption pauses, preserves selection and speed, and cancels completion', () async {
     final backend = FakeAudioBackend();
     final interruptions = FakeInterruptions();
@@ -97,9 +150,9 @@ void main() {
     addTearDown(service.dispose);
     final completions = <PagePlaybackCompletion>[];
     service.pageCompletions.listen(completions.add);
-    await service.playPage(
+    await service.playSequential(
       page: legacyPage,
-      targetBubble: legacyPage.playbackBubbles.last,
+      targetSentence: sentences.last,
     );
     backend.complete();
     await Future<void>.delayed(Duration.zero);

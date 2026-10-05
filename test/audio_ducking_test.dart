@@ -18,6 +18,46 @@ Future<void> advanceVolumeClock(WidgetTester tester, int milliseconds) async {
 }
 
 void main() {
+  for (final mode in [PlayMode.single, PlayMode.fullPage]) {
+    testWidgets(
+      'natural ${mode.name} completion keeps an active notification duck',
+      (tester) async {
+        final backend = FakeAudioBackend()..volume = 0.7;
+        final focus = FakeInterruptions();
+        final service = AudioPlayerService(
+          backend: backend,
+          interruptionSource: focus,
+        );
+        addTearDown(service.dispose);
+        if (mode == PlayMode.single) {
+          await service.playSentence(
+            pageSentences: sentences,
+            targetSentence: sentences.last,
+          );
+        } else {
+          await service.playPage(page: bubblePage, targetBubble: bubbles.last);
+        }
+        focus.beginDuck();
+        await tester.pump();
+        expect(backend.volume, 0.25);
+        backend.complete();
+        await tester.pump();
+        expect(service.isPlaying, isFalse);
+        expect(service.currentSentenceId, isNull);
+        expect(service.currentBubbleId, isNull);
+        await service.playSentence(
+          pageSentences: sentences,
+          targetSentence: sentences.first,
+        );
+        expect(backend.playedVolumes.last, 0.25);
+        expect(backend.volume, 0.25);
+        focus.endDuck();
+        await advanceVolumeClock(tester, 220);
+        expect(backend.volume, 0.7);
+      },
+    );
+  }
+
   testWidgets(
     'ducking keeps a whole-bubble sequence, highlighting and speed active',
     (tester) async {
@@ -270,7 +310,10 @@ void main() {
     addTearDown(service.dispose);
     final completions = <PagePlaybackCompletion>[];
     service.pageCompletions.listen(completions.add);
-    await service.playPage(page: bubblePage, targetBubble: bubbles.last);
+    await service.playSequential(
+      page: bubblePage,
+      targetSentence: sentences.last,
+    );
     backend.complete();
     focus.beginDuck();
     await tester.pump();

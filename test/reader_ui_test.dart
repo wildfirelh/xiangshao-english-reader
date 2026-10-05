@@ -182,8 +182,10 @@ void main() {
       );
 
       expect(find.text('暂无释义'), findsOneWidget);
-      await tester.tap(find.text('单句点读'));
-      await tester.pump();
+      await tester.tap(find.byKey(const Key('playback-mode')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('mode-option-fullPage')));
+      await tester.pumpAndSettle();
       expect(find.text('整页连读'), findsOneWidget);
       await tester.tap(find.byIcon(Icons.translate));
       await tester.pump();

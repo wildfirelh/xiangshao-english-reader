@@ -66,6 +66,10 @@ class FakeAudioBackend implements AudioPlaybackBackend {
   String? _asset;
   int stopCount = 0;
   int pauseCount = 0;
+  Completer<void>? delayPause;
+  Completer<void>? delayStop;
+  Duration position = Duration.zero;
+  final playedPositions = <Duration>[];
   double speed = 1.0;
   final playedSpeeds = <double>[];
   final speedRequests = <double>[];
@@ -94,12 +98,14 @@ class FakeAudioBackend implements AudioPlaybackBackend {
     }
     if (assetPath == failedAsset) throw StateError('Missing asset');
     _asset = assetPath;
+    position = Duration.zero;
     return const Duration(seconds: 1);
   }
 
   @override
   Future<void> play() async {
     playedAssets.add(_asset!);
+    playedPositions.add(position);
     playedSpeeds.add(speed);
     playedVolumes.add(volume);
   }
@@ -123,11 +129,14 @@ class FakeAudioBackend implements AudioPlaybackBackend {
   @override
   Future<void> stop() async {
     stopCount++;
+    await delayStop?.future;
+    position = Duration.zero;
   }
 
   @override
   Future<void> pause() async {
     pauseCount++;
+    await delayPause?.future;
   }
 
   void emitState(PlayerState state) => _states.add(state);
@@ -408,16 +417,16 @@ void main() {
   );
 
   test(
-    'continuous page completion fires once and stop invalidates continuation',
+    'sequential page completion fires once and stop invalidates continuation',
     () async {
       final backend = FakeAudioBackend();
       final service = AudioPlayerService(backend: backend);
       addTearDown(service.dispose);
       final completions = <PagePlaybackCompletion>[];
       service.pageCompletions.listen(completions.add);
-      await service.playPage(
+      await service.playSequential(
         page: legacyPage,
-        targetBubble: legacyPage.playbackBubbles.last,
+        targetSentence: sentences.last,
       );
       backend.complete();
       backend.complete();
@@ -529,7 +538,7 @@ void main() {
     service.dispose();
   });
 
-  test('continuous playback loads whole bubbles, highlights their union, and finishes once', () async {
+  test('full page loads whole bubbles, highlights their union, and stops at page end', () async {
     final backend = FakeAudioBackend();
     final service = AudioPlayerService(backend: backend);
     addTearDown(service.dispose);
@@ -537,7 +546,7 @@ void main() {
     service.pageCompletions.listen(completions.add);
     await service.setSpeed(0.8);
     await service.playPage(page: bubblePage);
-    expect(service.currentMode, PlayMode.continuous);
+    expect(service.currentMode, PlayMode.fullPage);
     expect(service.currentSentenceId, isNull);
     expect(service.currentBubble, same(bubbles.first));
     expect(service.currentBubble!.rect.bottom, 0.4);
@@ -554,10 +563,8 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(service.isPlaying, isFalse);
     expect(service.currentBubbleId, isNull);
-    expect(completions, hasLength(1));
-    expect(completions.single.sentenceId, 'three');
-    expect(completions.single.lastBubbleId, 'bubble-two');
-    expect(service.canContinue(completions.single), isTrue);
+    expect(completions, isEmpty);
+    expect(service.currentMode, PlayMode.fullPage);
   });
 
   test('tap immediately switches a playing bubble to single and never resumes the sequence', () async {
@@ -644,7 +651,10 @@ void main() {
     addTearDown(service.dispose);
     final completions = <PagePlaybackCompletion>[];
     service.pageCompletions.listen(completions.add);
-    await service.playPage(page: bubblePage, targetBubble: bubbles.last);
+    await service.playSequential(
+      page: bubblePage,
+      targetSentence: sentences.last,
+    );
     backend.complete();
     await Future<void>.delayed(Duration.zero);
     expect(service.canContinue(completions.single), isTrue);
@@ -703,6 +713,388 @@ void main() {
       expect(service.isPlaying, isFalse);
       expect(backend.playedAssets, ['assets/bubble-one.mp3']);
       expect(completions, isEmpty);
+    },
+  );
+
+  test(
+    'sequential starts at the exact child and reads subsequent children',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final completions = <PagePlaybackCompletion>[];
+      service.pageCompletions.listen(completions.add);
+      await service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences[1],
+      );
+      expect(service.currentMode, PlayMode.sequential);
+      expect(service.currentSentenceId, 'two');
+      expect(service.currentBubbleId, isNull);
+      expect(backend.playedAssets, ['assets/two.mp3']);
+      backend.complete();
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(service.currentSentenceId, 'three');
+      expect(backend.playedAssets, ['assets/two.mp3', 'assets/three.mp3']);
+      backend.complete();
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(completions, hasLength(1));
+      expect(completions.single.sentenceId, 'three');
+      expect(completions.single.lastBubbleId, 'bubble-two');
+      expect(service.canContinue(completions.single), isTrue);
+      expect(service.isPlaying, isFalse);
+      expect(service.currentSentenceId, isNull);
+    },
+  );
+
+  test('sequential follows bubble children, deduplicates, and retains unmapped clips', () async {
+    final page = TextbookPage(
+      pageIndex: 8,
+      imagePath: '',
+      // Deliberately differ from bubble reading order.
+      sentences: [sentences.last, sentences.first, sentences[1]],
+      bubbles: [
+        DialogueBubble(
+          id: 'ordered',
+          text: '',
+          audioPath: 'assets/unused-whole-bubble.mp3',
+          rect: bubbles.first.rect,
+          sentenceIds: const ['two', 'missing', 'one', 'two'],
+        ),
+      ],
+    );
+    final backend = FakeAudioBackend();
+    final service = AudioPlayerService(backend: backend);
+    addTearDown(service.dispose);
+    await service.playSequential(page: page);
+    expect(service.currentSentenceId, 'two');
+    backend.complete();
+    await Future<void>.delayed(Duration.zero);
+    expect(service.currentSentenceId, 'one');
+    backend.complete();
+    await Future<void>.delayed(Duration.zero);
+    expect(service.currentSentenceId, 'three');
+    backend.complete();
+    await Future<void>.delayed(Duration.zero);
+    expect(backend.playedAssets, [
+      'assets/two.mp3',
+      'assets/one.mp3',
+      'assets/three.mp3',
+    ]);
+  });
+
+  test(
+    'pause/resume retains native clip cursor, speed and one playback statistic',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      var starts = 0;
+      service.playbackStarts.listen((_) => starts++);
+      await service.setSpeed(1.5);
+      await service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences[1],
+      );
+      backend.emitState(PlayerState(true, ProcessingState.ready));
+      backend.position = const Duration(milliseconds: 450);
+      final stops = backend.stopCount;
+      await service.pause();
+      expect(service.isPlaying, isFalse);
+      expect(service.canResume, isTrue);
+      expect(service.currentSentenceId, 'two');
+      backend.complete();
+      await service.resume();
+      backend.emitState(PlayerState(true, ProcessingState.ready));
+      expect(backend.loadedAssets, ['assets/two.mp3']);
+      expect(backend.playedPositions, [
+        Duration.zero,
+        const Duration(milliseconds: 450),
+      ]);
+      expect(backend.playedSpeeds, [1.5, 1.5]);
+      expect(backend.stopCount, stops);
+      expect(starts, 1);
+      expect(service.isPlaying, isTrue);
+      expect(service.canResume, isFalse);
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(service.currentSentenceId, 'three');
+      backend.emitState(PlayerState(true, ProcessingState.ready));
+      expect(starts, 2);
+    },
+  );
+
+  test('pause/resume waits for native pause to finish before continuing same cursor', () async {
+    final backend = FakeAudioBackend()..delayPause = Completer<void>();
+    final service = AudioPlayerService(backend: backend);
+    addTearDown(service.dispose);
+    await service.playPage(page: bubblePage);
+    backend.position = const Duration(milliseconds: 600);
+    final pausing = service.pause();
+    final resuming = service.resume();
+    await Future<void>.delayed(Duration.zero);
+    expect(backend.playedAssets, hasLength(1));
+    expect(service.isPlaying, isFalse);
+    backend.delayPause!.complete();
+    await Future.wait([pausing, resuming]);
+    expect(backend.loadedAssets, ['assets/bubble-one.mp3']);
+    expect(backend.playedPositions.last, const Duration(milliseconds: 600));
+    expect(service.currentBubbleId, 'bubble-one');
+    expect(service.isPlaying, isTrue);
+  });
+
+  test(
+    'paused load finishes selected clip silently and resumes without a reload',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final loading = service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences[1],
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(service.isLoading, isTrue);
+      await service.pause();
+      expect(service.isLoading, isFalse);
+      expect(service.canResume, isTrue);
+      expect(service.currentSentenceId, 'two');
+      backend.delayFirstLoad!.complete();
+      await loading;
+      expect(service.isLoading, isFalse);
+      expect(backend.playedAssets, isEmpty);
+      await service.resume();
+      expect(backend.loadedAssets, ['assets/two.mp3']);
+      expect(backend.playedAssets, ['assets/two.mp3']);
+    },
+  );
+
+  test(
+    'resume during a paused load waits and never starts the asset twice',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final loading = service.playPage(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      await service.pause();
+      final resuming = service.resume();
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.playedAssets, isEmpty);
+      backend.delayFirstLoad!.complete();
+      await Future.wait([loading, resuming]);
+      expect(backend.loadedAssets, ['assets/bubble-one.mp3']);
+      expect(backend.playedAssets, ['assets/bubble-one.mp3']);
+    },
+  );
+
+  test(
+    'new selection beats a resumed stale load and retains only its own clip',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final loading = service.playSequential(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      await service.pause();
+      final resuming = service.resume();
+      final selected = service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences.last,
+      );
+      backend.delayFirstLoad!.complete();
+      await Future.wait([loading, resuming, selected]);
+      expect(backend.playedAssets, ['assets/three.mp3']);
+      expect(service.currentSentenceId, 'three');
+    },
+  );
+
+  test(
+    'stop immediately clears a pending resumed load and cancels every start',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final loading = service.playSequential(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      await service.pause();
+      final resuming = service.resume();
+      final stopping = service.stop();
+      expect(service.isPlaying, isFalse);
+      expect(service.isLoading, isFalse);
+      expect(service.currentSentenceId, isNull);
+      expect(service.canResume, isFalse);
+      backend.delayFirstLoad!.complete();
+      await Future.wait([loading, resuming, stopping]);
+      expect(backend.playedAssets, isEmpty);
+    },
+  );
+
+  test(
+    'late native stop cannot stop a newer sentence or resumed clip',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      await service.playSentence(
+        pageSentences: sentences,
+        targetSentence: sentences.first,
+      );
+      backend.delayStop = Completer<void>();
+      final stopping = service.stop();
+      final playing = service.playSentence(
+        pageSentences: sentences,
+        targetSentence: sentences.last,
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.playedAssets, ['assets/one.mp3']);
+      backend.delayStop!.complete();
+      await Future.wait([stopping, playing]);
+      expect(backend.playedAssets, ['assets/one.mp3', 'assets/three.mp3']);
+      expect(service.isPlaying, isTrue);
+      expect(service.currentSentenceId, 'three');
+    },
+  );
+
+  test(
+    'mode selection cancels loading, pause resume and an emitted continuation',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final completions = <PagePlaybackCompletion>[];
+      service.pageCompletions.listen(completions.add);
+      final loading = service.playSequential(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      await service.pause();
+      final resuming = service.resume();
+      service.setPlayMode(PlayMode.fullPage);
+      backend.delayFirstLoad!.complete();
+      await Future.wait([loading, resuming]);
+      expect(backend.playedAssets, isEmpty);
+      expect(service.currentSentenceId, isNull);
+      expect(service.canResume, isFalse);
+      await service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences.last,
+      );
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      final completion = completions.single;
+      expect(service.canContinue(completion), isTrue);
+      service.setPlayMode(PlayMode.sequential);
+      expect(service.canContinue(completion), isFalse);
+    },
+  );
+
+  test(
+    'pause without active sound invalidates delivered page continuation',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final completions = <PagePlaybackCompletion>[];
+      service.pageCompletions.listen(completions.add);
+      await service.playSequential(
+        page: bubblePage,
+        targetSentence: sentences.last,
+      );
+      backend.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(service.canContinue(completions.single), isTrue);
+      await service.pause();
+      expect(service.canContinue(completions.single), isFalse);
+      expect(service.canResume, isFalse);
+      service.setForeground(false);
+      service.setForeground(true);
+      expect(service.isPlaying, isFalse);
+      expect(backend.playedAssets, ['assets/three.mp3']);
+    },
+  );
+
+  test(
+    'background during resumed load prevents play until deliberate resume',
+    () async {
+      final backend = FakeAudioBackend()..delayFirstLoad = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      final loading = service.playSequential(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      await service.pause();
+      final resuming = service.resume();
+      service.setForeground(false);
+      backend.delayFirstLoad!.complete();
+      await Future.wait([loading, resuming]);
+      expect(backend.playedAssets, isEmpty);
+      expect(service.canResume, isFalse);
+      service.setForeground(true);
+      expect(backend.playedAssets, isEmpty);
+      expect(service.canResume, isTrue);
+      await service.resume();
+      expect(backend.loadedAssets, ['assets/one.mp3']);
+      expect(backend.playedAssets, ['assets/one.mp3']);
+    },
+  );
+
+  test('pause/resume at each asset-ready boundary never plays before pause settles', () async {
+    for (var phase = 0; phase < 16; phase++) {
+      final backend = FakeAudioBackend()
+        ..delayFirstLoad = Completer<void>()
+        ..delayPause = Completer<void>();
+      final service = AudioPlayerService(backend: backend);
+      final loading = service.playSequential(page: bubblePage);
+      await Future<void>.delayed(Duration.zero);
+      final injected = Completer<void>();
+      late Future<void> pausing;
+      late Future<void> resuming;
+      var playsAtPause = 0;
+      void interruptAfter(int remaining) {
+        if (remaining > 0) {
+          scheduleMicrotask(() => interruptAfter(remaining - 1));
+          return;
+        }
+        playsAtPause = backend.playedAssets.length;
+        pausing = service.pause();
+        resuming = service.resume();
+        injected.complete();
+      }
+
+      backend.delayFirstLoad!.complete();
+      interruptAfter(phase);
+      await injected.future;
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        backend.playedAssets.length,
+        playsAtPause,
+        reason: 'Native pause is still outstanding at ready boundary $phase',
+      );
+      backend.delayPause!.complete();
+      await Future.wait([loading, pausing, resuming]);
+      expect(backend.loadedAssets, ['assets/one.mp3']);
+      expect(backend.playedAssets.length, playsAtPause + 1);
+      expect(service.isPlaying, isTrue);
+      service.dispose();
+    }
+  });
+
+  test(
+    'a synchronous stop listener cancels playback before native play starts',
+    () async {
+      final backend = FakeAudioBackend();
+      final service = AudioPlayerService(backend: backend);
+      addTearDown(service.dispose);
+      service.addListener(() {
+        if (service.isPlaying) unawaited(service.stop());
+      });
+      await service.playSentence(
+        pageSentences: sentences,
+        targetSentence: sentences.first,
+      );
+      expect(backend.playedAssets, isEmpty);
+      expect(service.isPlaying, isFalse);
+      expect(service.currentSentenceId, isNull);
     },
   );
 }
