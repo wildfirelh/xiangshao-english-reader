@@ -20,6 +20,7 @@ class TextbookBottomBar extends StatelessWidget {
     this.onPlaybackToggle,
     this.onReplay,
     this.onDismissTranslation,
+    this.onFollowAlong,
   });
 
   final PlayMode currentMode;
@@ -36,6 +37,7 @@ class TextbookBottomBar extends StatelessWidget {
   final VoidCallback? onPlaybackToggle;
   final VoidCallback? onReplay;
   final VoidCallback? onDismissTranslation;
+  final VoidCallback? onFollowAlong;
 
   static String _speedLabel(double speed) => '${speed.toStringAsFixed(1)}x';
 
@@ -329,12 +331,17 @@ class TextbookBottomBar extends StatelessWidget {
                     ),
                   );
                   final microphoneButton = IconButton(
+                    key: const ValueKey('follow-along-button'),
                     constraints: const BoxConstraints(
                       minWidth: 48,
                       minHeight: 48,
                     ),
                     tooltip: '跟读评测',
                     onPressed: () {
+                      if (onFollowAlong != null) {
+                        onFollowAlong!();
+                        return;
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('功能正在开发中，敬请期待')),
                       );

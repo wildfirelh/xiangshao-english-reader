@@ -4,7 +4,9 @@ import 'package:english_point_reading/models/textbook.dart';
 import 'package:english_point_reading/screens/textbook_reader_screen.dart';
 import 'package:english_point_reading/services/audio_interruption_source.dart';
 import 'package:english_point_reading/services/audio_player_service.dart';
+import 'package:english_point_reading/services/speech_evaluator.dart';
 import 'package:english_point_reading/widgets/interactive_textbook_page.dart';
+import 'package:english_point_reading/widgets/speech_evaluation_sheet.dart';
 import 'package:english_point_reading/widgets/textbook_bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -108,6 +110,7 @@ void main() {
             data: MediaQuery.of(context)
                 .copyWith(disableAnimations: reduceMotion),
             child: TextbookReaderScreen(
+              speechEvaluatorFactory: () => MockSpeechEvaluator(),
               audioPlayerService: service,
               progressStore: progress ?? MemoryReadingProgressStore(),
               book: Textbook(
@@ -155,6 +158,36 @@ void main() {
     await tester.tap(find.byKey(ValueKey('mode-option-${mode.name}')));
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+    'long press during automatic animation opens exact follow along',
+    (tester) async {
+      final backend = FakeAudioBackend();
+      final service = await open(tester, backend, mode: PlayMode.sequential);
+      backend.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      final canvas = find.byType(InteractiveTextbookPage).first;
+      final bounds = tester.getRect(canvas);
+      final image = containedImageRect(bounds.size, const Size(3, 4));
+      final location =
+          bounds.topLeft +
+          image.topLeft +
+          Offset(image.width * 0.75, image.height * 0.36);
+      await tester.longPressAt(location);
+      await tester.pumpAndSettle();
+      final sheet = tester.widget<SpeechEvaluationSheet>(
+        find.byType(SpeechEvaluationSheet),
+      );
+      expect(sheet.sentence.id, 'one');
+      expect(service.isPlaying, isFalse);
+      expect(find.text('第 1 / 2 页'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('speech-close')));
+      await tester.pumpAndSettle();
+      expect(service.isPlaying, isFalse);
+      expect(backend.playedAssets.last, 'assets/two.mp3');
+    },
+  );
 
   testWidgets('sequential mode waits for a sentence with the requested hint', (
     tester,

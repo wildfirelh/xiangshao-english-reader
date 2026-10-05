@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.6.0+7
+version: 1.7.0+8
 
 environment:
   sdk: ^3.13.5
@@ -33,6 +33,10 @@ dependencies:
   just_audio: ^0.9.36
   audio_session: ^0.1.25
   crypto: ^3.0.7
+  sherpa_onnx: ^1.10.0
+  record: ^5.1.2
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -52,6 +56,12 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
+# record 5.x selects record_linux 0.7.2, which lacks the newer platform
+# interface's startStream/hasPermission methods and breaks Android compilation.
+# Keep the requested record 5.x API; use the compatible Linux implementation.
+dependency_overrides:
+  record_linux: 1.3.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -62,6 +72,7 @@ flutter:
     - assets/textbooks/xiangshao_3_1/
     - assets/textbooks/xiangshao_3_1/images/
     - assets/textbooks/xiangshao_3_1/audios/
+    - assets/models/sherpa/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

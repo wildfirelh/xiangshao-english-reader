@@ -18,6 +18,7 @@ class InteractiveTextbookPage extends StatefulWidget {
     required this.page,
     required this.activeSentenceId,
     required this.onSentenceTap,
+    this.onSentenceLongPress,
     this.activeBubbleId,
   });
 
@@ -25,6 +26,7 @@ class InteractiveTextbookPage extends StatefulWidget {
   final String? activeSentenceId;
   final String? activeBubbleId;
   final ValueChanged<PointSentence> onSentenceTap;
+  final ValueChanged<PointSentence>? onSentenceLongPress;
 
   @override
   State<InteractiveTextbookPage> createState() =>
@@ -184,6 +186,15 @@ class InteractiveTextbookPageState extends State<InteractiveTextbookPage> {
           );
           if (sentence != null) widget.onSentenceTap(sentence);
         },
+        onLongPressStart: widget.onSentenceLongPress == null
+            ? null
+            : (details) {
+                final sentence = _sentenceAtLocalPosition(
+                  details.localPosition,
+                  size,
+                );
+                if (sentence != null) widget.onSentenceLongPress!(sentence);
+              },
         child: Stack(
           children: [
             Positioned.fromRect(

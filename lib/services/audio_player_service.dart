@@ -45,7 +45,13 @@ abstract class AudioPlaybackBackend {
   Future<void> dispose();
 }
 
-class JustAudioPlaybackBackend implements AudioPlaybackBackend {
+/// Optional local-file capability keeps existing asset-only test backends valid.
+abstract class AudioFilePlaybackBackend {
+  Future<Duration?> setFilePath(String filePath);
+}
+
+class JustAudioPlaybackBackend
+    implements AudioPlaybackBackend, AudioFilePlaybackBackend {
   JustAudioPlaybackBackend({AudioPlayer? player})
     : _player = player ?? AudioPlayer(handleInterruptions: false);
 
@@ -62,6 +68,10 @@ class JustAudioPlaybackBackend implements AudioPlaybackBackend {
 
   @override
   Future<Duration?> setAsset(String assetPath) => _player.setAsset(assetPath);
+
+  @override
+  Future<Duration?> setFilePath(String filePath) =>
+      _player.setFilePath(filePath);
 
   @override
   Future<void> play() => _player.play();
@@ -150,6 +160,7 @@ class AudioPlayerService extends ChangeNotifier {
   int _transportRequest = 0;
   int _pendingInterrupts = 0;
   bool _disposed = false;
+  bool _isPracticeAudio = false;
 
   String? get currentSentenceId => _currentSentenceId;
   String? get currentBubbleId => _currentBubble?.id;
@@ -392,6 +403,7 @@ class AudioPlayerService extends ChangeNotifier {
     if (!_isForeground) return Future<void>.value();
 
     ++_continuationGeneration;
+    _isPracticeAudio = false;
     _currentMode = PlayMode.single;
     _page = null;
     _pageBubbles = const [];
@@ -422,6 +434,7 @@ class AudioPlayerService extends ChangeNotifier {
     }
     if (!_isForeground) return Future<void>.value();
     ++_continuationGeneration;
+    _isPracticeAudio = false;
     _currentMode = PlayMode.fullPage;
     if (bubbles.isEmpty) return stop();
     _page = page;
@@ -451,6 +464,7 @@ class AudioPlayerService extends ChangeNotifier {
     }
     if (!_isForeground) return Future<void>.value();
     ++_continuationGeneration;
+    _isPracticeAudio = false;
     _currentMode = PlayMode.sequential;
     if (ordered.isEmpty) return stop();
     _page = page;
@@ -494,7 +508,36 @@ class AudioPlayerService extends ChangeNotifier {
     return _loadAudio(_sequenceSentences[index].audioPath);
   }
 
-  Future<void> _loadAudio(String audioPath) {
+  /// A/B practice uses the same exclusive player without starting a reading queue
+  /// or counting an extra textbook reading session. Keep the user's mode choice.
+  Future<void> playPracticeAsset(String assetPath) =>
+      _playPracticeAudio(assetPath, localFile: false);
+
+  Future<void> playRecordingFile(String filePath) =>
+      _playPracticeAudio(filePath, localFile: true);
+
+  Future<void> _playPracticeAudio(String path, {required bool localFile}) {
+    if (_disposed) return Future.error(StateError('Player has been disposed.'));
+    if (path.isEmpty) {
+      return Future.error(ArgumentError('Audio path is empty.'));
+    }
+    if (localFile && _backend is! AudioFilePlaybackBackend) {
+      return Future.error(UnsupportedError('Local playback is unavailable.'));
+    }
+    if (!_isForeground) return Future<void>.value();
+    ++_continuationGeneration;
+    _page = null;
+    _pageBubbles = const [];
+    _sequenceSentences = const [];
+    _currentBubbleIndex = -1;
+    _currentSentenceIndex = -1;
+    _currentBubble = null;
+    _currentSentenceId = null;
+    _isPracticeAudio = true;
+    return _loadAudio(path, localFile: localFile);
+  }
+
+  Future<void> _loadAudio(String audioPath, {bool localFile = false}) {
     final request = ++_requestId;
     ++_transportRequest;
     _activePlaybackRequest = null;
@@ -516,7 +559,11 @@ class AudioPlayerService extends ChangeNotifier {
         if (request != _requestId || _disposed) return;
         await _interruptions?.initialize();
         if (request != _requestId || _disposed) return;
-        await _backend.setAsset(audioPath);
+        if (localFile) {
+          await (_backend as AudioFilePlaybackBackend).setFilePath(audioPath);
+        } else {
+          await _backend.setAsset(audioPath);
+        }
         await _pendingSpeed;
         await _pendingVolume;
         await _pendingTransport;
@@ -661,7 +708,7 @@ class AudioPlayerService extends ChangeNotifier {
           _activePlaybackRequest == _requestId &&
           _reportedStartRequest != _requestId) {
         _reportedStartRequest = _requestId;
-        _playbackStarts.add(null);
+        if (!_isPracticeAudio) _playbackStarts.add(null);
       }
       if (state.playing && _activePlaybackRequest == _requestId) {
         _observedPlayingRequest = _requestId;
@@ -764,6 +811,7 @@ class AudioPlayerService extends ChangeNotifier {
     _sequenceSentences = const [];
     _currentBubbleIndex = -1;
     _currentSentenceIndex = -1;
+    _isPracticeAudio = false;
     notifyListeners();
   }
 

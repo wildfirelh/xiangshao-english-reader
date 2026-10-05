@@ -8,7 +8,9 @@ import '../models/textbook_unit.dart';
 import '../services/audio_player_service.dart';
 import '../services/learning_controller.dart';
 import '../services/reading_progress_store.dart';
+import '../services/speech_evaluator.dart';
 import '../widgets/interactive_textbook_page.dart';
+import '../widgets/speech_evaluation_sheet.dart';
 import '../widgets/textbook_bottom_bar.dart';
 
 class TextbookReaderScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class TextbookReaderScreen extends StatefulWidget {
     this.onPointRead,
     this.learningController,
     this.eyeReminderInterval = const Duration(minutes: 20),
+    this.speechEvaluatorFactory,
   });
 
   final Textbook book;
@@ -33,6 +36,7 @@ class TextbookReaderScreen extends StatefulWidget {
   final Future<void> Function()? onPointRead;
   final LearningController? learningController;
   final Duration eyeReminderInterval;
+  final SpeechEvaluator Function()? speechEvaluatorFactory;
 
   /// Physical PDF page; an explicit unit selection takes priority over progress.
   final int? initialPageIndex;
@@ -89,6 +93,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   int? _scrollTapPage;
   int? _scrollTapPointer;
   Offset? _scrollTapPosition;
+  Timer? _scrollLongPressTimer;
   int? _pagePointer;
   Offset? _pagePointerDownPosition;
   bool _manualDragStopped = false;
@@ -97,6 +102,8 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
   bool _isTranslationEnabled = true;
   PointSentence? _previewSentence;
   String? _dismissedTranslationId;
+  PointSentence? _lastPointSentence;
+  bool _speechSheetOpen = false;
 
   @override
   void initState() {
@@ -243,6 +250,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     setState(() {
       _pageIndex = index;
       _previewSentence = null;
+      _lastPointSentence = null;
       _dismissedTranslationId = null;
     });
     unawaited(_saveProgress(index));
@@ -260,6 +268,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     setState(() {
       _pageIndex = tappedPageIndex;
       _previewSentence = null;
+      _lastPointSentence = sentence;
       _dismissedTranslationId = null;
     });
     if (_pageController?.hasClients == true) {
@@ -294,7 +303,132 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
     }
   }
 
+  Future<void> _openFollowAlong({
+    PointSentence? selectedSentence,
+    int? pageIndex,
+  }) async {
+    if (_speechSheetOpen || !mounted) return;
+    _speechSheetOpen = true;
+    SpeechEvaluator? evaluator;
+    try {
+      var sentence =
+          selectedSentence ??
+          _activeSentence ??
+          _firstSentenceOf(_activeBubble) ??
+          _lastPointSentence;
+      _cancelAutoAdvance();
+      if (pageIndex != null && pageIndex != _pageIndex) {
+        setState(() {
+          _pageIndex = pageIndex;
+          _previewSentence = null;
+          _lastPointSentence = null;
+          _dismissedTranslationId = null;
+        });
+        unawaited(_saveProgress(pageIndex));
+      }
+      if (_pageController?.hasClients == true) {
+        _pageController!.jumpToPage(_pageIndex);
+      }
+      await _audio.stop();
+      if (!mounted) return;
+      if (sentence == null) {
+        final sentences = _pages[_pageIndex].sentences;
+        if (sentences.isEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('这一页没有可跟读的句子，请翻到课文页面。')));
+          return;
+        }
+        sentence = await showModalBottomSheet<PointSentence>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          showDragHandle: true,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+          ),
+          builder: (sheetContext) => SafeArea(
+            top: false,
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              children: [
+                Text(
+                  '选择一句开始跟读',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                for (final item in sentences)
+                  ListTile(
+                    title: Text(item.text),
+                    subtitle: item.translation == null
+                        ? null
+                        : Text(item.translation!),
+                    trailing: const Icon(Icons.mic_none),
+                    onTap: () => Navigator.pop(sheetContext, item),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+      if (sentence == null || !mounted) return;
+      final reference = sentence;
+      setState(() {
+        _previewSentence = reference;
+        _lastPointSentence = reference;
+      });
+      evaluator =
+          widget.speechEvaluatorFactory?.call() ?? LocalSherpaSpeechEvaluator();
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+        ),
+        builder: (_) => SpeechEvaluationSheet(
+          sentence: reference,
+          evaluator: evaluator!,
+          onPlayReference: () => _audio.playPracticeAsset(reference.audioPath),
+          onPlayRecording: _audio.playRecordingFile,
+          onStopPlayback: _audio.stop,
+        ),
+      );
+    } catch (error) {
+      debugPrint('Could not open follow-along practice: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('跟读暂时无法打开，请重试。')));
+      }
+    } finally {
+      try {
+        if (evaluator != null) {
+          try {
+            await _audio.stop();
+          } catch (error) {
+            debugPrint('Could not stop follow-along preview: $error');
+          } finally {
+            try {
+              await evaluator.dispose();
+            } catch (error) {
+              debugPrint('Could not release follow-along resources: $error');
+            }
+          }
+        }
+      } finally {
+        _speechSheetOpen = false;
+      }
+    }
+  }
+
   void _onPagePointerDown(PointerDownEvent event) {
+    _scrollLongPressTimer?.cancel();
     _pagePointer = event.pointer;
     _pagePointerDownPosition = event.position;
     _manualDragStopped = false;
@@ -321,12 +455,25 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
         _scrollTapPage = entry.key;
         _scrollTapPointer = event.pointer;
         _scrollTapPosition = event.position;
+        _scrollLongPressTimer = Timer(kLongPressTimeout, () {
+          if (!mounted || _scrollTapSentence == null) return;
+          final selected = _scrollTapSentence!;
+          final selectedPage = _scrollTapPage;
+          _scrollTapSentence = null;
+          unawaited(
+            _openFollowAlong(
+              selectedSentence: selected,
+              pageIndex: selectedPage,
+            ),
+          );
+        });
         return;
       }
     }
   }
 
   void _onPagePointerUp(PointerUpEvent event) {
+    _scrollLongPressTimer?.cancel();
     _pagePointer = null;
     _pagePointerDownPosition = null;
     final sentence = _scrollTapSentence;
@@ -348,6 +495,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
         event.pointer == _scrollTapPointer &&
         (event.position - _scrollTapPosition!).distance > kTouchSlop) {
       _scrollTapSentence = null;
+      _scrollLongPressTimer?.cancel();
     }
   }
 
@@ -544,6 +692,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
 
   @override
   void dispose() {
+    _scrollLongPressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _cancelAutoAdvance();
     unawaited(_completionSubscription?.cancel());
@@ -692,6 +841,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                           onPointerMove: _onPagePointerMove,
                           onPointerUp: _onPagePointerUp,
                           onPointerCancel: (_) {
+                            _scrollLongPressTimer?.cancel();
                             _pagePointer = null;
                             _pagePointerDownPosition = null;
                             _scrollTapSentence = null;
@@ -716,6 +866,12 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                                 activeBubbleId: index == _pageIndex
                                     ? activeBubble?.id
                                     : null,
+                                onSentenceLongPress: (sentence) => unawaited(
+                                  _openFollowAlong(
+                                    selectedSentence: sentence,
+                                    pageIndex: index,
+                                  ),
+                                ),
                                 onSentenceTap: (sentence) {
                                   if (!_handledScrollingTap) {
                                     unawaited(
@@ -762,6 +918,7 @@ class _TextbookReaderScreenState extends State<TextbookReaderScreen>
                 ],
               ),
         bottomNavigationBar: TextbookBottomBar(
+          onFollowAlong: () => unawaited(_openFollowAlong()),
           currentMode: _audio.currentMode,
           onModeChanged: _setPlayMode,
           currentSpeed: _audio.currentSpeed,
