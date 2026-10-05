@@ -168,9 +168,9 @@ class GiteeRelease:
         self.session.trust_env = False
         self.session.headers["Authorization"] = f"token {token}"
 
-    def request(self, method, path, *, missing_ok=False, **kwargs):
+    def request(self, method, path, *, missing_ok=False, timeout=(20, 180), **kwargs):
         try:
-            with self.session.request(method, API + path, timeout=(20, 180),
+            with self.session.request(method, API + path, timeout=timeout,
                                       allow_redirects=False, **kwargs) as response:
                 if missing_ok and response.status_code == 404:
                     return None
@@ -206,7 +206,10 @@ class GiteeRelease:
 
     def upload(self, release_id, file):
         with file.open("rb") as source:
+            # requests encodes multipart bodies before sending them. Its connect
+            # timeout also applies while writing this large body to the socket.
             return self.request("POST", f"/repos/{REPOSITORY}/releases/{int(release_id)}/attach_files",
+                                timeout=(120, 300),
                                 files={"file": (file.name, source, "application/octet-stream")})
 
     def publish(self, tag, commit, notes, files, manifest):
