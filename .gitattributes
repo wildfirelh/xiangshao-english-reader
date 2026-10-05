@@ -1,0 +1,3 @@
+# Keep pinned model checksums identical after Windows Git checkouts.
+assets/models/sherpa/*.onnx -text
+assets/models/sherpa/tokens.txt text eol=lf
